@@ -1,0 +1,2 @@
+rostopic pub /uav1/mavros/set_mode mavros_msgs/SetMode "{'base_mode': 0, 'custom_mode': 'LOITER'}"
+rostopic pub /uav1/mavros/set_mode mavros_msgs/SetMode "{'base_mode': 0, 'custom_mode': 'AUTO.TAKEOFF'}"
