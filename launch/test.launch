@@ -11,7 +11,7 @@
     <!-- <arg name="world" default="$(find auto_landing)/worlds/landing_pad.world" /> -->
     <arg name="px4_config" default="$(find auto_landing)/config/px4_config.yaml" />
     <arg name="gui" default="true"/>
-    <arg name="ns" default="uav1"/>
+    <arg name="ns" default="/"/>
     <!-- <arg name="model" default="iris"/> -->
   	<arg name="sdf" default="/home/clp/prometheus_px4/Tools/sitl_gazebo/models/standard_vtol/standard_vtol.sdf"/>
 
