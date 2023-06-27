@@ -13,15 +13,17 @@
     <arg name="gui" default="true"/>
     <arg name="ns" default="/"/>
     <!-- <arg name="model" default="iris"/> -->
-  	<arg name="sdf" default="/home/clp/prometheus_px4/Tools/sitl_gazebo/models/standard_vtol/standard_vtol.sdf"/>
-
+  	<arg name="sdf" default="/home/clp/prometheus_px4/Tools/sitl_gazebo/models/standard_vtol_1/standard_vtol.sdf"/>
    	<arg name="model" default="standard_vtol"/>
+    <arg name="vehicle" default="standard_vtol"/>
+    <!-- <arg name="sdf" default="/home/clp/prometheus_px4/Tools/sitl_gazebo/models/standard_vtol_1/standard_vtol_1.sdf"/>
+   	<arg name="model" default="standard_vtol_1"/>
+    <arg name="vehicle" default="standard_vtol_1"/> -->
 
-    <arg name="fcu_url" default="udp://:14540@localhost:14557"/>
+    <arg name="fcu_url" default="udp://:14540@localhost:14580"/>
     <arg name="gcs_url" default="" />   <!-- GCS link is provided by SITL -->
     <arg name="tgt_system" default="1" />
     <arg name="tgt_component" default="1" />
-    <arg name="vehicle" default="iris"/>
 
     <param name="use_sim_time" value="true" />
 
