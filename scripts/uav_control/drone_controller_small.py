@@ -53,7 +53,7 @@ class Controller:
     def __init__(self, number):
         self.number = number
         self.uav_name = "/uav" + number 
-        self.link_name = "standard_vtol_" + number + "::base_link"
+        self.link_name = "iris_" + number + "::base_link"
         print("start to control vtol", number)
         # print("whose link name is ", self.link_name)
         node_name = 'controller_'+number 

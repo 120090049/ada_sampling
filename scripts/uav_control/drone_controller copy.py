@@ -84,22 +84,22 @@ class Controller:
         # self.pwd = sys.path[0]
         
         # initialize flight control
-        # Wait for Flight Controller connection
-        while(not rospy.is_shutdown() and not self.mavros_state.connected):
-            self.rate.sleep()
+        # # Wait for Flight Controller connection
+        # while(not rospy.is_shutdown() and not self.mavros_state.connected):
+        #     self.rate.sleep()
 
-        pose = PoseStamped()
-        pose.pose.position.z = FLYING_HEIGHT
+        # pose = PoseStamped()
+        # pose.pose.position.z = FLYING_HEIGHT
 
-        # Send a few setpoints before starting
-        for i in range(10):
-            if(rospy.is_shutdown()):
-                break
+        # # Send a few setpoints before starting
+        # for i in range(10):
+        #     if(rospy.is_shutdown()):
+        #         break
 
-            self.local_pos_pub.publish(pose)
-            self.rate.sleep()
-        self.ori_pos[0] = self.pos[0]
-        self.ori_pos[1] = self.pos[1]
+        #     self.local_pos_pub.publish(pose)
+        #     self.rate.sleep()
+        # self.ori_pos[0] = self.pos[0]
+        # self.ori_pos[1] = self.pos[1]
         rospy.loginfo("Vtol initialzed")
       
     def mavros_state_callback(self, msg):
@@ -113,48 +113,98 @@ class Controller:
         self.pos = [int(gazebo_link_states.pose[index].position.x), int(gazebo_link_states.pose[index].position.y)]
 
     def take_off(self):
-        offb_set_mode = SetModeRequest()
-        offb_set_mode.custom_mode = 'OFFBOARD'
+        # offb_set_mode = SetModeRequest()
+        # offb_set_mode.custom_mode = 'OFFBOARD'
         
-        arm_cmd = CommandBoolRequest()
-        arm_cmd.value = True
+        # arm_cmd = CommandBoolRequest()
+        # arm_cmd.value = True
 
-        last_req = rospy.Time.now()
-        # self.pose.pose.position.x = self.ori_pos[0]
-        # self.pose.pose.position.y = self.ori_pos[1]
+        # last_req = rospy.Time.now()
+        # # self.pose.pose.position.x = self.ori_pos[0]
+        # # self.pose.pose.position.y = self.ori_pos[1]
+        # self.pose.pose.position.x = 0
+        # self.pose.pose.position.y = 0
+        # self.pose.pose.position.z = FLYING_HEIGHT
+        # break_tag = False
+        # while(not break_tag):
+        #     # arm
+        #     while(not self.mavros_state.armed and (rospy.Time.now() - last_req) > rospy.Duration(0.5)):
+        #         last_req = rospy.Time.now()
+        #         if(self.armServer.call(arm_cmd).success == True):
+        #             rospy.loginfo("Vehicle armed")
+        #             rospy.sleep(2)
+        #             # offboard   
+        #             while (True):
+        #                 if(self.mavros_state.mode != "OFFBOARD" and (rospy.Time.now() - last_req) > rospy.Duration(0.5)):
+        #                     last_req = rospy.Time.now()
+        #                     if((self.setModeServer.call(offb_set_mode).mode_sent == True)):
+        #                         rospy.loginfo("OFFBOARD enabled")
+
+        #                         # reach to inital height
+        #                         target_height = FLYING_HEIGHT - 0.5
+        #                         while (int(self.height) <= target_height):
+        #                             # print("originial pose = ", self.ori_pos, end='\r')
+        #                             # print("temp pose = ", self.pos, end='\r')
+        #                             print("height = " , self.height, end='\r')
+        #                             self.local_pos_pub.publish(self.pose)
+        #                             self.rate.sleep()
+        #                         rospy.loginfo("reach to VTOL_TRANSITION height and wait for further command") 
+        #                         break_tag = True
+        #                         break
+        #                 self.rate.sleep()
+        #     if (break_tag):
+        #         break
+        #     self.rate.sleep()
+        #wait for connection to flight controller
+        rospy.loginfo("waiting for connection to flight controller")
+        while(not rospy.is_shutdown() and not self.mavros_state.connected):
+            self.rate.sleep()
+
         self.pose.pose.position.x = 0
         self.pose.pose.position.y = 0
         self.pose.pose.position.z = FLYING_HEIGHT
-        break_tag = False
-        while(not break_tag):
-            # arm
-            while(not self.mavros_state.armed and (rospy.Time.now() - last_req) > rospy.Duration(0.5)):
-                last_req = rospy.Time.now()
-                if(self.armServer.call(arm_cmd).success == True):
-                    rospy.loginfo("Vehicle armed")
-                    rospy.sleep(2)
-                    # offboard   
-                    while (True):
-                        if(self.mavros_state.mode != "OFFBOARD" and (rospy.Time.now() - last_req) > rospy.Duration(0.5)):
-                            last_req = rospy.Time.now()
-                            if((self.setModeServer.call(offb_set_mode).mode_sent == True)):
-                                rospy.loginfo("OFFBOARD enabled")
-
-                                # reach to inital height
-                                target_height = FLYING_HEIGHT - 0.5
-                                while (int(self.height) <= target_height):
-                                    # print("originial pose = ", self.ori_pos, end='\r')
-                                    # print("temp pose = ", self.pos, end='\r')
-                                    print("height = " , self.height, end='\r')
-                                    self.local_pos_pub.publish(self.pose)
-                                    self.rate.sleep()
-                                rospy.loginfo("reach to VTOL_TRANSITION height and wait for further command") 
-                                break_tag = True
-                                break
-                        self.rate.sleep()
-            if (break_tag):
+        # Send a few setpoints before starting
+        for i in range(100):   
+            if(rospy.is_shutdown()):
                 break
+            self.local_pos_pub.publish(self.pose)
+            if i%10 == 0:
+                rospy.loginfo("sent " + str(i) + " setpoints")
             self.rate.sleep()
+        
+        offb_set_mode = SetModeRequest()
+        offb_set_mode.custom_mode = 'OFFBOARD'
+
+        arm_cmd = CommandBoolRequest()
+        arm_cmd.value = True
+        
+        last_req = rospy.Time.now()
+        
+        self.pose.pose.position.x = 0
+        self.pose.pose.position.y = 0
+        self.pose.pose.position.z = FLYING_HEIGHT
+        while(not rospy.is_shutdown()):
+            if(self.mavros_state.mode != "OFFBOARD" and (rospy.Time.now() - last_req) > rospy.Duration(5.0)):
+                if(self.setModeServer.call(offb_set_mode).mode_sent == True):
+                    rospy.loginfo("OFFBOARD enabled")
+                    if(not self.mavros_state.armed and (rospy.Time.now() - last_req) > rospy.Duration(5.0)):
+                            if(self.armServer.call(arm_cmd).success == True):
+                                rospy.loginfo("Vehicle armed")
+                                break
+                            last_req = rospy.Time.now()
+                
+                last_req = rospy.Time.now()
+
+            self.rate.sleep()
+        # reach to inital height
+        target_height = FLYING_HEIGHT - 0.5
+        while (int(self.height) <= target_height):
+            # print("originial pose = ", self.ori_pos, end='\r')
+            # print("temp pose = ", self.pos, end='\r')
+            print("height = " , self.height, end='\r')
+            self.local_pos_pub.publish(self.pose)
+            self.rate.sleep()
+        rospy.loginfo("reach to VTOL_TRANSITION height and wait for further command") 
             
     def mission(self):
 
@@ -164,7 +214,7 @@ class Controller:
         while (self.transitVtolServer.call(vtol_set_mode).success == False):
             self.rate.sleep()
         rospy.loginfo("VTOL_TRANSITION enabled (fix wing mode)")
-        self.pose.pose.position.x = 10*(int(self.number)+1)
+        self.pose.pose.position.x = 10*int(self.number+1)
         self.pose.pose.position.y = 10
         self.pose.pose.position.z = 15
         
@@ -209,9 +259,7 @@ class Controller:
                 print("LANDING", end='\r')
                 self.rate.sleep()
             rospy.loginfo("Landed successfully and disarming the vehicle")
-        elif self.key == '5':
-            self.armServer(False)
-            print("disarm")
+       
      
     def send_speed_command(self, velocity_x, velocity_y, velocity_z):
         msg = PositionTarget()
