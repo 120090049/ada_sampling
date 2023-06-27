@@ -77,7 +77,7 @@
     <!-- UAV2 -->
     <group ns="uav2">
         <!-- MAVROS and vehicle configs -->
-        <arg name="vehicle" default="iris"/>
+        <arg name="vehicle" default="standard_vtol_drop"/>
         <arg name="ID" value="2"/>
         <arg name="newID" value="3"/>
         <arg name="fcu_url" default="udp://:14542@localhost:14582"/>
