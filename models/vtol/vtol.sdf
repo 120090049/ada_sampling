@@ -1,7 +1,6 @@
 <?xml version="1.0"?>
-<!-- DO NOT EDIT: Generated from standard_vtol.sdf.jinja -->
 <sdf version='1.5'>
-  <model name='standard_vtol'>
+  <model name='vtol'>
     <pose>0 0 0.246 0 0 0</pose>
     <link name='base_link'>
       <pose>0 0 0 0 0 0</pose>
@@ -43,7 +42,7 @@
         <geometry>
           <mesh>
             <scale>0.001 0.001 0.001</scale>
-            <uri>model://standard_vtol/meshes/x8_wing.dae</uri>
+            <uri>model://vtol/meshes/x8_wing.dae</uri>
           </mesh>
         </geometry>
         <material>
@@ -145,7 +144,7 @@
       <velocity_decay/>
       <self_collide>0</self_collide>
     </link>
-    <link name='standard_vtol/imu_link'>
+    <link name='vtol/imu_link'>
       <pose>0 0 0 0 0 0</pose>
       <inertial>
         <pose>0 0 0 0 0 0</pose>
@@ -160,8 +159,8 @@
         </inertia>
       </inertial>
     </link>
-    <joint name='standard_vtol/imu_joint' type='revolute'>
-      <child>standard_vtol/imu_link</child>
+    <joint name='vtol/imu_joint' type='revolute'>
+      <child>vtol/imu_link</child>
       <parent>base_link</parent>
       <axis>
         <xyz>1 0 0</xyz>
@@ -187,6 +186,7 @@
       <child>airspeed::link</child>
       <parent>base_link</parent>
     </joint>
+
     <link name='rotor_0'>
       <pose>0.35 -0.35 0.07 0 0 0</pose>
       <inertial>
@@ -223,7 +223,7 @@
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>model://standard_vtol/meshes/iris_prop_ccw.dae</uri>
+            <uri>model://vtol/meshes/iris_prop_ccw.dae</uri>
           </mesh>
         </geometry>
         <material>
@@ -289,7 +289,7 @@
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>model://standard_vtol/meshes/iris_prop_ccw.dae</uri>
+            <uri>model://vtol/meshes/iris_prop_ccw.dae</uri>
           </mesh>
         </geometry>
         <material>
@@ -355,7 +355,7 @@
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>model://standard_vtol/meshes/iris_prop_ccw.dae</uri>
+            <uri>model://vtol/meshes/iris_prop_ccw.dae</uri>
           </mesh>
         </geometry>
         <material>
@@ -421,7 +421,7 @@
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>model://standard_vtol/meshes/iris_prop_ccw.dae</uri>
+            <uri>model://vtol/meshes/iris_prop_ccw.dae</uri>
           </mesh>
         </geometry>
         <material>
@@ -488,7 +488,7 @@
         <geometry>
           <mesh>
             <scale>0.8 0.8 0.8</scale>
-            <uri>model://standard_vtol/meshes/iris_prop_ccw.dae</uri>
+            <uri>model://vtol/meshes/iris_prop_ccw.dae</uri>
           </mesh>
         </geometry>
         <material>
@@ -519,6 +519,77 @@
       </axis>
     </joint>
 
+    <link name="elevator">
+      <inertial>
+        <mass>0.00000001</mass>
+        <inertia>
+          <ixx>0.000001</ixx>
+          <ixy>0.0</ixy>
+          <iyy>0.000001</iyy>
+          <ixz>0.0</ixz>
+          <iyz>0.0</iyz>
+          <izz>0.000001</izz>
+        </inertia>
+        <pose> -0.5 0 0 0.00 0 0.0</pose>
+      </inertial>
+    </link>
+    <link name="rudder">
+      <inertial>
+        <mass>0.00000001</mass>
+        <inertia>
+          <ixx>0.000001</ixx>
+          <ixy>0.0</ixy>
+          <iyy>0.000001</iyy>
+          <ixz>0.0</ixz>
+          <iyz>0.0</iyz>
+          <izz>0.000001</izz>
+        </inertia>
+        <pose>-0.5 0 0.05 0 0 0 </pose>
+      </inertial>
+    </link>
+    <joint name='elevator_joint' type='revolute'>
+      <parent>base_link</parent>
+      <child>elevator</child>
+      <pose> -0.5 0 0 0 0 0</pose>
+      <axis>
+        <xyz>0 1 0</xyz>
+        <limit>
+          <!-- -30/+30 deg. -->
+          <lower>-0.53</lower>
+          <upper>0.53</upper>
+        </limit>
+        <dynamics>
+          <damping>1.000</damping>
+        </dynamics>
+      </axis>
+      <physics>
+        <ode>
+          <implicit_spring_damper>1</implicit_spring_damper>
+        </ode>
+      </physics>
+    </joint>
+    <joint name='rudder_joint' type='revolute'>
+      <parent>base_link</parent>
+      <child>rudder</child>
+      <pose>-0.5 0 0.05 0.00 0 0.0</pose>
+      <axis>
+        <xyz>1 0 0</xyz>
+        <limit>
+          <!-- -30/+30 deg. -->
+          <lower>-0.01</lower>
+          <upper>0.01</upper>
+        </limit>
+        <dynamics>
+          <damping>1.000</damping>
+        </dynamics>
+      </axis>
+      <physics>
+        <ode>
+          <implicit_spring_damper>1</implicit_spring_damper>
+        </ode>
+      </physics>
+    </joint>
+
     <link name="left_elevon">
       <inertial>
         <mass>0.00000001</mass>
@@ -537,7 +608,7 @@
         <geometry>
           <mesh>
             <scale>0.001 0.001 0.001</scale>
-            <uri>model://standard_vtol/meshes/x8_elevon_left.dae</uri>
+            <uri>model://vtol/meshes/x8_elevon_left.dae</uri>
           </mesh>
         </geometry>
         <material>
@@ -566,7 +637,7 @@
         <geometry>
           <mesh>
             <scale>0.001 0.001 0.001</scale>
-            <uri>model://standard_vtol/meshes/x8_elevon_right.dae</uri>
+            <uri>model://vtol/meshes/x8_elevon_right.dae</uri>
           </mesh>
         </geometry>
         <material>
@@ -576,34 +647,6 @@
           </script>
         </material>
       </visual>
-    </link>
-    <link name="elevator">
-      <inertial>
-        <mass>0.00000001</mass>
-        <inertia>
-          <ixx>0.000001</ixx>
-          <ixy>0.0</ixy>
-          <iyy>0.000001</iyy>
-          <ixz>0.0</ixz>
-          <iyz>0.0</iyz>
-          <izz>0.000001</izz>
-        </inertia>
-        <pose> -0.5 0 0 0.00 0 0.0</pose>
-      </inertial>
-    </link>
-    <link name="rudder">
-      <inertial>
-        <mass>0.00000001</mass>
-        <inertia>
-          <ixx>0.000001</ixx>
-          <ixy>0.0</ixy>
-          <iyy>0.000001</iyy>
-          <ixz>0.0</ixz>
-          <iyz>0.0</iyz>
-          <izz>0.000001</izz>
-        </inertia>
-        <pose>-0.5 0 0.05 0 0 0 </pose>
-      </inertial>
     </link>
     <joint name='left_elevon_joint' type='revolute'>
       <parent>base_link</parent>
@@ -647,48 +690,7 @@
         </ode>
       </physics>
     </joint>
-    <joint name='elevator_joint' type='revolute'>
-      <parent>base_link</parent>
-      <child>elevator</child>
-      <pose> -0.5 0 0 0 0 0</pose>
-      <axis>
-        <xyz>0 1 0</xyz>
-        <limit>
-          <!-- -30/+30 deg. -->
-          <lower>-0.53</lower>
-          <upper>0.53</upper>
-        </limit>
-        <dynamics>
-          <damping>1.000</damping>
-        </dynamics>
-      </axis>
-      <physics>
-        <ode>
-          <implicit_spring_damper>1</implicit_spring_damper>
-        </ode>
-      </physics>
-    </joint>
-    <joint name='rudder_joint' type='revolute'>
-      <parent>base_link</parent>
-      <child>rudder</child>
-      <pose>-0.5 0 0.05 0.00 0 0.0</pose>
-      <axis>
-        <xyz>1 0 0</xyz>
-        <limit>
-          <!-- -30/+30 deg. -->
-          <lower>-0.01</lower>
-          <upper>0.01</upper>
-        </limit>
-        <dynamics>
-          <damping>1.000</damping>
-        </dynamics>
-      </axis>
-      <physics>
-        <ode>
-          <implicit_spring_damper>1</implicit_spring_damper>
-        </ode>
-      </physics>
-    </joint>
+
     <include>
       <uri>model://gps</uri>
       <pose>0 0 0 0 0 0</pose>
@@ -698,6 +700,9 @@
       <child>gps::link</child>
       <parent>base_link</parent>
     </joint>
+
+
+
     <plugin name="left_wing_lift" filename="libLiftDragPlugin.so">
       <a0>0.05984281113</a0>
       <cla>4.752798721</cla>
@@ -782,6 +787,9 @@
       <robotNamespace></robotNamespace>
       <windSubTopic>world_wind</windSubTopic>
     </plugin>
+
+
+
     <plugin name='front_right_motor_model' filename='libgazebo_motor_model.so'>
       <robotNamespace></robotNamespace>
       <jointName>rotor_0_joint</jointName>
@@ -850,6 +858,9 @@
       <motorSpeedPubTopic>/motor_speed/3</motorSpeedPubTopic>
       <rotorVelocitySlowdownSim>20</rotorVelocitySlowdownSim>
     </plugin>
+
+
+
     <plugin name='puller_motor_model' filename='libgazebo_motor_model.so'>
       <robotNamespace></robotNamespace>
       <jointName>rotor_puller_joint</jointName>
@@ -867,19 +878,7 @@
       <motorSpeedPubTopic>/motor_speed/4</motorSpeedPubTopic>
       <rotorVelocitySlowdownSim>20</rotorVelocitySlowdownSim>
     </plugin>
-    <plugin name='gazebo_imu_plugin' filename='libgazebo_imu_plugin.so'>
-      <robotNamespace></robotNamespace>
-      <linkName>standard_vtol/imu_link</linkName>
-      <imuTopic>/imu</imuTopic>
-      <gyroscopeNoiseDensity>0.0003394</gyroscopeNoiseDensity>
-      <gyroscopeRandomWalk>3.8785e-05</gyroscopeRandomWalk>
-      <gyroscopeBiasCorrelationTime>1000.0</gyroscopeBiasCorrelationTime>
-      <gyroscopeTurnOnBiasSigma>0.0087</gyroscopeTurnOnBiasSigma>
-      <accelerometerNoiseDensity>0.004</accelerometerNoiseDensity>
-      <accelerometerRandomWalk>0.006</accelerometerRandomWalk>
-      <accelerometerBiasCorrelationTime>300.0</accelerometerBiasCorrelationTime>
-      <accelerometerTurnOnBiasSigma>0.196</accelerometerTurnOnBiasSigma>
-    </plugin>
+
     <plugin name='groundtruth_plugin' filename='libgazebo_groundtruth_plugin.so'>
       <robotNamespace/>
     </plugin>
@@ -897,21 +896,19 @@
       <baroTopic>/baro</baroTopic>
     </plugin>
     <plugin name='mavlink_interface' filename='libgazebo_mavlink_interface.so'>
-      <robotNamespace></robotNamespace>
+      <robotNamespace/>
       <imuSubTopic>/imu</imuSubTopic>
+      <gpsSubTopic>/gps</gpsSubTopic>
       <magSubTopic>/mag</magSubTopic>
       <baroSubTopic>/baro</baroSubTopic>
       <mavlink_addr>INADDR_ANY</mavlink_addr>
-      <mavlink_tcp_port>4560</mavlink_tcp_port>
       <mavlink_udp_port>14560</mavlink_udp_port>
-      <serialEnabled>0</serialEnabled>
+      <serialEnabled>false</serialEnabled>
       <serialDevice>/dev/ttyACM0</serialDevice>
       <baudRate>921600</baudRate>
       <qgc_addr>INADDR_ANY</qgc_addr>
       <qgc_udp_port>14550</qgc_udp_port>
-      <sdk_addr>INADDR_ANY</sdk_addr>
-      <sdk_udp_port>14540</sdk_udp_port>
-      <hil_mode>0</hil_mode>
+      <hil_mode>false</hil_mode>
       <hil_state_level>false</hil_state_level>
       <enable_lockstep>true</enable_lockstep>
       <use_tcp>true</use_tcp>
@@ -922,45 +919,40 @@
           <input_offset>0</input_offset>
           <input_scaling>1500</input_scaling>
           <zero_position_disarmed>0</zero_position_disarmed>
-          <zero_position_armed>0</zero_position_armed>
+          <zero_position_armed>100</zero_position_armed>
           <joint_control_type>velocity</joint_control_type>
-          <joint_name>rotor_0_joint</joint_name>
         </channel>
         <channel name="rotor1">
           <input_index>1</input_index>
           <input_offset>0</input_offset>
           <input_scaling>1500</input_scaling>
           <zero_position_disarmed>0</zero_position_disarmed>
-          <zero_position_armed>0</zero_position_armed>
+          <zero_position_armed>100</zero_position_armed>
           <joint_control_type>velocity</joint_control_type>
-          <joint_name>rotor_1_joint</joint_name>
         </channel>
         <channel name="rotor2">
           <input_index>2</input_index>
           <input_offset>0</input_offset>
           <input_scaling>1500</input_scaling>
           <zero_position_disarmed>0</zero_position_disarmed>
-          <zero_position_armed>0</zero_position_armed>
+          <zero_position_armed>100</zero_position_armed>
           <joint_control_type>velocity</joint_control_type>
-          <joint_name>rotor_2_joint</joint_name>
         </channel>
         <channel name="rotor3">
           <input_index>3</input_index>
           <input_offset>0</input_offset>
           <input_scaling>1500</input_scaling>
           <zero_position_disarmed>0</zero_position_disarmed>
-          <zero_position_armed>0</zero_position_armed>
+          <zero_position_armed>100</zero_position_armed>
           <joint_control_type>velocity</joint_control_type>
-          <joint_name>rotor_3_joint</joint_name>
         </channel>
         <channel name="rotor4">
           <input_index>4</input_index>
           <input_offset>0</input_offset>
           <input_scaling>5500</input_scaling>
           <zero_position_disarmed>0</zero_position_disarmed>
-          <zero_position_armed>0</zero_position_armed>
+          <zero_position_armed>100</zero_position_armed>
           <joint_control_type>velocity</joint_control_type>
-          <joint_name>rotor_puller_joint</joint_name>
         </channel>
         <channel name="left_elevon">
           <input_index>5</input_index>
@@ -992,5 +984,18 @@
       </control_channels>
     </plugin>
     <static>0</static>
+    <plugin name='gazebo_imu_plugin' filename='libgazebo_imu_plugin.so'>
+      <robotNamespace></robotNamespace>
+      <linkName>vtol/imu_link</linkName>
+      <imuTopic>/imu</imuTopic>
+      <gyroscopeNoiseDensity>0.0003394</gyroscopeNoiseDensity>
+      <gyroscopeRandomWalk>3.8785e-05</gyroscopeRandomWalk>
+      <gyroscopeBiasCorrelationTime>1000.0</gyroscopeBiasCorrelationTime>
+      <gyroscopeTurnOnBiasSigma>0.0087</gyroscopeTurnOnBiasSigma>
+      <accelerometerNoiseDensity>0.004</accelerometerNoiseDensity>
+      <accelerometerRandomWalk>0.006</accelerometerRandomWalk>
+      <accelerometerBiasCorrelationTime>300.0</accelerometerBiasCorrelationTime>
+      <accelerometerTurnOnBiasSigma>0.196</accelerometerTurnOnBiasSigma>
+    </plugin>
   </model>
 </sdf>

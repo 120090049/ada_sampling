@@ -21,7 +21,7 @@
         <arg name="paused" value="$(arg paused)"/>
     </include>
 
-    <arg name="vehicle" default="p450"/>
+    <arg name="vehicle" default="vtol"/>
     <!-- <arg name="sdf" default="$(find prometheus_gazebo)/amov_models/MultiUAV/uav1/uav1.sdf"/>
     <arg name="model" default="uav1"/> -->
 
