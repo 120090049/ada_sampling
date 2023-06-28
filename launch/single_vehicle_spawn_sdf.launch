@@ -13,7 +13,6 @@
     <!-- vehcile model and config -->
     <arg name="est" default="ekf2"/>
     <arg name="vehicle" default="plane"/>
-    <arg name="test_vehicle" default="standard_vtol"/>
     <arg name="ID" default="1"/>
     <env name="PX4_SIM_MODEL" value="$(arg vehicle)" />
     <env name="PX4_ESTIMATOR" value="$(arg est)" />
