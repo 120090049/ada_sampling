@@ -57,11 +57,11 @@ def getnames(data):
     global vtol3index
     flag = 1
     for j in range(len(data.name)):
-        if data.name[j]=="standard_vtol_0":
+        if data.name[j]=="uav0":
             vtol1index=j
-        if data.name[j]=="standard_vtol_1":
+        if data.name[j]=="uav1":
             vtol2index=j
-        if data.name[j]=="standard_vtol_2":
+        if data.name[j]=="uav2":
             vtol3index = j
 
 
@@ -134,8 +134,8 @@ def move():
         vtol2_prim.set_world_pose(position=np.array([vtol2_pose.position.x, vtol2_pose.position.y, vtol2_pose.position.z+0.75]),orientation=np.array([vtol2_pose.orientation.w, vtol2_pose.orientation.x, vtol2_pose.orientation.y, vtol2_pose.orientation.z]))
     if vtol2index != 999:
         vtol3_prim.set_world_pose(position=np.array([vtol3_pose.position.x, vtol3_pose.position.y, vtol3_pose.position.z+0.75]),orientation=np.array([vtol3_pose.orientation.w, vtol3_pose.orientation.x, vtol3_pose.orientation.y, vtol3_pose.orientation.z]))
-    # vc_prim.set_world_pose(position=np.array([vc_pose.position.x, vc_pose.position.y, vc_pose.position.z]),orientation=get_quaternion_from_euler(vc_pose.orientation.x, vc_pose.orientation.y, vc_pose.orientation.z))
-    # vg_prim.set_world_pose(position=np.array([vg_pose.position.x, vg_pose.position.y, vg_pose.position.z]),orientation=get_quaternion_from_euler(vg_pose.orientation.x, vg_pose.orientation.y, vg_pose.orientation.z))
+    vc_prim.set_world_pose(position=np.array([vc_pose.position.x, vc_pose.position.y, vc_pose.position.z]),orientation=get_quaternion_from_euler(vc_pose.orientation.x, vc_pose.orientation.y, vc_pose.orientation.z))
+    vg_prim.set_world_pose(position=np.array([vg_pose.position.x, vg_pose.position.y, vg_pose.position.z]),orientation=get_quaternion_from_euler(vg_pose.orientation.x, vg_pose.orientation.y, vg_pose.orientation.z))
     
     #gimbal for down cameras
     #Fixed Wing 1
@@ -182,8 +182,8 @@ vtol1_prim = Robot("/World/UAVs/uav1","vtol1")
 vtol2_prim = Robot("/World/UAVs/uav2","vtol2")
 vtol3_prim = Robot("/World/UAVs/uav3","vtol3")
 
-# vc_prim = Robot("/World/Vessels/vessel_c","vc")
-# vg_prim = Robot("/World/Vessels/vessel_g","vg")
+vc_prim = Robot("/World/Vessels/vessel_c","vc")
+vg_prim = Robot("/World/Vessels/vessel_g","vg")
 vcamera1down_prim = Robot("/World/UAVs/uav1/uav1_cam2","vcam1down")
 vcamera2down_prim = Robot("/World/UAVs/uav2/uav2_cam2","vcam2down")
 

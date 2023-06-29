@@ -20,19 +20,21 @@
         <arg name="verbose" value="$(arg verbose)"/>
         <arg name="paused" value="$(arg paused)"/>
     </include>
+
+    <arg name="vehicle" default="vtol"/>
+    <!-- <arg name="sdf" default="$(find prometheus_gazebo)/amov_models/MultiUAV/uav1/uav1.sdf"/>
+    <arg name="model" default="uav1"/> -->
+
     <!-- UAV0 -->
     <group ns="uav1">
         <!-- MAVROS and vehicle configs -->
-        <arg name="vehicle" default="p450"/>
         <arg name="ID" value="0"/>
         <arg name="fcu_url" default="udp://:14540@localhost:14580"/>
-        <arg name="sdf" default="$(find prometheus_gazebo)/amov_models/MultiUAV/uav1/uav1.sdf"/>
-        <arg name="model" default="uav1"/>
         <!-- <arg name="sdf" default="$(find px4)/Tools/sitl_gazebo/models/standard_vtol/standard_vtol.sdf"/> -->
         <!-- <arg name="sdf" default="$(find ada_sampling)/model/standard_vtol_1/standard_vtol_1.sdf"/>   -->
 		<!-- <arg name="model" default="standard_vtol"/> -->
         <!-- PX4 SITL and vehicle spawn -->
-        <include file="$(find px4)/launch/single_vehicle_spawn_sdf.launch">
+        <include file="$(find ada_sampling)/launch/single_vehicle_spawn_sdf.launch">
             <arg name="x" value="0"/>
             <arg name="y" value="0"/>
             <arg name="z" value="0"/>
@@ -41,7 +43,8 @@
             <arg name="Y" value="0"/>
             <arg name="vehicle" value="$(arg vehicle)"/>
             <arg name="mavlink_udp_port" value="14560"/>
-            <arg name="mavlink_tcp_port" value="4560"/>
+            <!-- mavlink - simulator (px4 on stil) -->
+            <arg name="mavlink_tcp_port" value="4560"/> 
             <arg name="ID" value="$(arg ID)"/>
         </include>
         <!-- MAVROS -->
@@ -54,14 +57,14 @@
     </group>
     <!-- UAV1 -->
     <group ns="uav2">
-        <arg name="vehicle" default="p450"/>
+        <!-- <arg name="vehicle" default="iris"/> -->
         <!-- MAVROS and vehicle configs -->
         <arg name="ID" value="1"/>
         <arg name="fcu_url" default="udp://:14541@localhost:14581"/>
-        <arg name="sdf" default="$(find prometheus_gazebo)/amov_models/MultiUAV/uav2/uav2.sdf"/>
-		<arg name="model" default="uav2"/>        
+        <!-- <arg name="sdf" default="$(find prometheus_gazebo)/amov_models/MultiUAV/uav2/uav2.sdf"/>
+		<arg name="model" default="uav2"/>         -->
         <!-- PX4 SITL and vehicle spawn -->
-        <include file="$(find px4)/launch/single_vehicle_spawn_sdf.launch">
+        <include file="$(find ada_sampling)/launch/single_vehicle_spawn_sdf.launch">
             <arg name="x" value="0"/>
             <arg name="y" value="-5"/>
             <arg name="z" value="0"/>
@@ -85,13 +88,13 @@
     <!-- UAV3 -->
     <group ns="uav3">
         <!-- MAVROS and vehicle configs -->
-        <arg name="vehicle" default="p450"/>
+        <!-- <arg name="vehicle" default="iris"/> -->
         <arg name="ID" value="2"/>
         <arg name="fcu_url" default="udp://:14542@localhost:14582"/>
-        <arg name="sdf" default="$(find prometheus_gazebo)/amov_models/MultiUAV/uav3/uav3.sdf"/>
-		<arg name="model" default="uav3"/>
+        <!-- <arg name="sdf" default="$(find prometheus_gazebo)/amov_models/MultiUAV/uav3/uav3.sdf"/>
+		<arg name="model" default="uav3"/> -->
         <!-- PX4 SITL and vehicle spawn -->
-        <include file="$(find px4)/launch/single_vehicle_spawn_sdf.launch">
+        <include file="$(find ada_sampling)/launch/single_vehicle_spawn_sdf.launch">
             <arg name="x" value="0"/>
             <arg name="y" value="-10"/>
             <arg name="z" value="0"/>
