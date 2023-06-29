@@ -70,10 +70,14 @@ def callback(data):
     global flag
     if flag==0: 
         getnames(data)
-    # vc_pose.position = data.pose[4].position
-    # vc_pose.orientation = data.pose[4].orientation
-    # vg_pose.position = data.pose[5].position
-    # vg_pose.orientation = data.pose[5].orientation
+    vd_pose.position = data.pose[4].position
+    vd_pose.orientation = data.pose[4].orientation
+    vg_pose.position = data.pose[5].position
+    vg_pose.orientation = data.pose[5].orientation
+    vd_pose.position = data.pose[4].position
+    vd_pose.orientation = data.pose[4].orientation
+    vg_pose.position = data.pose[5].position
+    vg_pose.orientation = data.pose[5].orientation
     if vtol1index != 999:
         vtol1_pose.position = data.pose[vtol1index].position        #drone VTOL1  
         vtol1_pose.orientation = data.pose[vtol1index].orientation
@@ -134,7 +138,7 @@ def move():
         vtol2_prim.set_world_pose(position=np.array([vtol2_pose.position.x, vtol2_pose.position.y, vtol2_pose.position.z+0.75]),orientation=np.array([vtol2_pose.orientation.w, vtol2_pose.orientation.x, vtol2_pose.orientation.y, vtol2_pose.orientation.z]))
     if vtol2index != 999:
         vtol3_prim.set_world_pose(position=np.array([vtol3_pose.position.x, vtol3_pose.position.y, vtol3_pose.position.z+0.75]),orientation=np.array([vtol3_pose.orientation.w, vtol3_pose.orientation.x, vtol3_pose.orientation.y, vtol3_pose.orientation.z]))
-    vc_prim.set_world_pose(position=np.array([vc_pose.position.x, vc_pose.position.y, vc_pose.position.z]),orientation=get_quaternion_from_euler(vc_pose.orientation.x, vc_pose.orientation.y, vc_pose.orientation.z))
+    vd_prim.set_world_pose(position=np.array([vd_pose.position.x, vd_pose.position.y, vd_pose.position.z]),orientation=get_quaternion_from_euler(vd_pose.orientation.x, vd_pose.orientation.y, vd_pose.orientation.z))
     vg_prim.set_world_pose(position=np.array([vg_pose.position.x, vg_pose.position.y, vg_pose.position.z]),orientation=get_quaternion_from_euler(vg_pose.orientation.x, vg_pose.orientation.y, vg_pose.orientation.z))
     
     #gimbal for down cameras
@@ -173,7 +177,7 @@ vtol2_pose = Pose()
 vtol3_pose = Pose()
 
 
-vc_pose = Pose()
+vd_pose = Pose()
 vg_pose = Pose()
 
 vcamera1down_pose = Pose()
@@ -182,7 +186,7 @@ vtol1_prim = Robot("/World/UAVs/uav1","vtol1")
 vtol2_prim = Robot("/World/UAVs/uav2","vtol2")
 vtol3_prim = Robot("/World/UAVs/uav3","vtol3")
 
-vc_prim = Robot("/World/Vessels/vessel_c","vc")
+vd_prim = Robot("/World/Vessels/vessel_d","vd")
 vg_prim = Robot("/World/Vessels/vessel_g","vg")
 vcamera1down_prim = Robot("/World/UAVs/uav1/uav1_cam2","vcam1down")
 vcamera2down_prim = Robot("/World/UAVs/uav2/uav2_cam2","vcam2down")
