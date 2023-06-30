@@ -7,6 +7,28 @@
 
 . ${R}etc/init.d/rc.vtol_defaults
 
+
+# param set-default ASPD_SCALE	1
+# param set-default ASPD_SCALE_EST	0
+# param set-default COM_HOME_H_T	5
+# param set-default COM_HOME_V_T	10
+# param set-default COM_POS_FS_GAIN	10
+# param set-default COM_POS_FS_PROB	30
+# param set-default COM_REARM_GRACE	1
+# param set-default FW_POSCTL_INV_ST	0
+
+# param set-default RC_ACRO_TH	0.75
+# param set-default RC_ASSIST_TH	0.25
+# param set-default RC_AUTO_TH	0.75
+# param set-default RC_MAN_TH	0.75
+# param set-default RC_POSCTL_TH	0.75
+# param set-default RC_STAB_TH	0.5
+# param set-default RTL_FLT_TIME	15
+# param set-default SYS_AUTOCONFIG	0
+param set-default COM_RCL_EXCEPT 4
+# param set-default COM_FLIGHT_UUID 11
+param set-default BAT_N_CELLS 4
+
 param set-default FW_L1_PERIOD 12
 param set-default FW_MAN_P_MAX 30
 param set-default FW_PR_FF 0.2
