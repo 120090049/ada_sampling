@@ -117,7 +117,11 @@ class Ship_controller:
 
 
 if __name__ == "__main__":
-
+    
+    settings = termios.tcgetattr(sys.stdin)
+    
     vessel_id = "d_1" 
     controller = Ship_controller(vessel_id)
     controller.main_loop()
+    
+    termios.tcsetattr(sys.stdin, termios.TCSADRAIN, settings)
