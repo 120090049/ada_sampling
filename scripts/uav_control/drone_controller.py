@@ -171,7 +171,11 @@ class Controller:
         self.rate.sleep()
     
     def command_control(self):
-      
+        # if self.key == '9':
+        #     if self.armServer(False):
+        #         print("Vehicle disarming succeed!")
+        #     else:
+        #         print("Vehicle arming failed!")
         if self.key == '0':
             rospy.loginfo("Start to takeoff")
             self.take_off()

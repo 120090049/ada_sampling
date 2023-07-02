@@ -24,8 +24,6 @@ def getnames(data):
     subscriber.unregister()
     
 
-
-
 if __name__ == "__main__":
     rospy.init_node('listener', anonymous = True)
     subscriber = rospy.Subscriber("/gazebo/model_states", ModelStates, getnames, queue_size = 10)
