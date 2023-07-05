@@ -3,11 +3,14 @@ import matplotlib.pyplot as plt
 from scipy.special import comb
 
 class BezierCurveGenerator:
-    def __init__(self, interestPT1, interestPT2, curvity):
+    def __init__(self, interestPT1, interestPT2, curvity, frequency = 10):
         self.interestPT1 = np.array(interestPT1)
         self.interestPT2 = np.array(interestPT2)
+        
         self.curvity = curvity
         self.MID_PT = None
+        self.frequency = frequency
+        
 
     def bezier_curve(self, t, control_points):
         n = len(control_points) - 1
@@ -19,7 +22,6 @@ class BezierCurveGenerator:
     def generate_random_point(self):
         midpoint = (self.interestPT1 + self.interestPT2) / 2.0
         var = np.random.normal(loc=0, scale=self.curvity, size=2)
-        print(var)
         displacement = var * np.linalg.norm(self.interestPT2 - self.interestPT1)
         self.MID_PT = midpoint + displacement
 
@@ -28,7 +30,7 @@ class BezierCurveGenerator:
         control_points = [self.interestPT1, self.MID_PT, self.interestPT2]
 
         length = np.linalg.norm(self.interestPT2 - self.interestPT1)
-        t = np.linspace(0, 1, int(length*10))
+        t = np.linspace(0, 1, int(length*self.frequency))
         curve_points = np.array([self.bezier_curve(ti, control_points) for ti in t]) 
         return curve_points
 

@@ -4,6 +4,8 @@ from gazebo_msgs.srv import SetModelState, GetModelState
 from gazebo_msgs.msg import ModelState
 from geometry_msgs.msg import Pose
 
+# shipT2 = ShipTrajectoryGenerator(tourboat_visit_pts, curvity=0.05, frequency=0.05)
+
 def move_vessel():
     rospy.init_node('vessel_controller')
     rate = rospy.Rate(20)
