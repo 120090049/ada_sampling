@@ -3,14 +3,14 @@ import matplotlib.pyplot as plt
 from scipy.special import comb
 
 class BezierCurveGenerator:
-    def __init__(self, interestPT1, interestPT2, curvity, frequency = 10):
+    def __init__(self, interestPT1, interestPT2, control_PT, curvity, frequency = 10):
         self.interestPT1 = np.array(interestPT1)
         self.interestPT2 = np.array(interestPT2)
-        
+        self.control_PT = control_PT
         self.curvity = curvity
         self.MID_PT = None
+        self.var = 0
         self.frequency = frequency
-        
 
     def bezier_curve(self, t, control_points):
         n = len(control_points) - 1
@@ -19,17 +19,18 @@ class BezierCurveGenerator:
             curve_point += comb(n, i) * (1 - t)**(n - i) * t**i * point
         return curve_point
 
-    def generate_random_point(self):
+    def generate_ctr_point(self):
         midpoint = (self.interestPT1 + self.interestPT2) / 2.0
-        var = np.random.normal(loc=0, scale=self.curvity, size=2)
-        displacement = var * np.linalg.norm(self.interestPT2 - self.interestPT1)
+        self.var = np.random.normal(loc=0, scale=self.curvity, size=2)
+        displacement = (self.var+0.1*self.control_PT) * np.linalg.norm(self.interestPT2 - self.interestPT1)
         self.MID_PT = midpoint + displacement
 
     def generate_random_bezier_curve(self):
-        self.generate_random_point()
+        self.generate_ctr_point()
         control_points = [self.interestPT1, self.MID_PT, self.interestPT2]
 
-        length = np.linalg.norm(self.interestPT2 - self.interestPT1)
+        length = (1.2)**(np.linalg.norm(10*self.var + self.control_PT)) * np.linalg.norm(self.interestPT2 - self.interestPT1)
+        
         t = np.linspace(0, 1, int(length*self.frequency))
         curve_points = np.array([self.bezier_curve(ti, control_points) for ti in t]) 
         return curve_points
