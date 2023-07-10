@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from bezier_curve_generator import BezierCurveGenerator
+# from bezier_curve_generator import BezierCurveGenerator
+from trajectory_gen.bezier_curve_generator import BezierCurveGenerator
 import random, time
 import math
 
@@ -25,20 +26,18 @@ class ShipTrajectoryGenerator:
             raise ValueError("At least two points are required.")
 
         # 随机选择两个相邻的点
-        point1 = self.interest_pt_list[np.random.randint(num_points - 1)]
+        self.position = self.interest_pt_list[np.random.randint(num_points)]
         while (True):
-            point2 = self.interest_pt_list[np.random.randint(num_points - 1)]
-            if np.array_equal(point1, point2):
+            self.pre_interestPT  = self.interest_pt_list[np.random.randint(num_points)]
+            if not np.array_equal(self.position, self.pre_interestPT):
                 break
-        weight = np.random.uniform(0, 1)
-
-        # 计算线性插值得到随机点的坐标
-        self.position = (1 - weight) * point1 + weight * point2
-        generator = BezierCurveGenerator(self.position, point2, self.control_pt, self.randomness, self.frequency)
-        self.pre_interestPT = point1
-        self.trajectory = generator.generate_random_bezier_curve()
-
+            
+        length = self.generate_trajectory()
+        pos_index = int(length * np.random.random()) 
         
+        self.position_index = pos_index
+        self.position = self.trajectory[self.position_index]
+
     
     def generate_trajectory(self):
         # choose the destination
@@ -47,14 +46,14 @@ class ShipTrajectoryGenerator:
         index2 = np.where(np.all(self.interest_pt_list == self.pre_interestPT, axis=1))[0][0]
         remaining_items = [value for index, value in enumerate(self.interest_pt_list) if index not in [index1, index2]]
         destination = random.choice(remaining_items)
-    
         self.pre_interestPT = self.position
         # generate the curve
         generator = BezierCurveGenerator(self.position, destination, self.control_pt, self.randomness, self.frequency)
 
         self.trajectory = generator.generate_random_bezier_curve()
-
-    
+        # print("self.trajectory", len(self.trajectory))
+        return len(self.trajectory)
+        
     def move(self):
         if any(np.all(self.position == pt) for pt in self.interest_pt_list):
         # if self.position in self.interest_pt_list:
@@ -72,28 +71,28 @@ def main():
     
     harbourT1 = np.array([400, 400])
     interestPT1 = np.array([800, 1500])
-    interestPT2 = np.array([3000, 1000])
+    interestPT2 = np.array([3700, 1000])
     
-    harbourF1 = np.array([2500, 200])
-    harbourF2 = np.array([3500, 200])
-    interestPF1 = np.array([2500, 1600])
+    # harbourF1 = np.array([1500, 200])
+    # harbourF2 = np.array([3500, 200])
+    # interestPF1 = np.array([2500, 1800])
     
     tourboat_visit_pts = [harbourT1, interestPT1, interestPT2]
-    fishboat_visit_pts = [harbourF1, harbourF1, interestPF1]
+    # fishboat_visit_pts = [harbourF1, harbourF2, interestPF1]
     
-    wind=[0,1]
-    wave=[1,0]
+    wind=[0,2]
+    wave=[2,0]
     
-    frequency = 0.1
-    randomness= 0.1
+    frequency = 0.01
+    randomness= 0.02
     shipT1 = ShipTrajectoryGenerator(tourboat_visit_pts, wind, wave, randomness, frequency)
     shipT2 = ShipTrajectoryGenerator(tourboat_visit_pts, wind, wave, randomness, frequency)
     shipT3 = ShipTrajectoryGenerator(tourboat_visit_pts, wind, wave, randomness, frequency)
     
     
-    shipF1 = ShipTrajectoryGenerator(fishboat_visit_pts, wind, wave, randomness, frequency)
-    shipF2 = ShipTrajectoryGenerator(fishboat_visit_pts, wind, wave, randomness, frequency)
-    shipF3 = ShipTrajectoryGenerator(fishboat_visit_pts, wind, wave, randomness, frequency)
+    # shipF1 = ShipTrajectoryGenerator(fishboat_visit_pts, wind, wave, randomness, frequency)
+    # shipF2 = ShipTrajectoryGenerator(fishboat_visit_pts, wind, wave, randomness, frequency)
+    # shipF3 = ShipTrajectoryGenerator(fishboat_visit_pts, wind, wave, randomness, frequency)
     
     fig, ax = plt.subplots()
 
@@ -112,15 +111,19 @@ def main():
     ax.plot(interestPT2[0], interestPT2[1], 'ro', label='interestPT2')
     ax.plot(harbourT1[0], harbourT1[1], 'ro', label='harbourT1')
     
-    ax.plot(harbourF1[0], harbourF1[1], 'bo', label='harbourF1')
-    ax.plot(harbourF2[0], harbourF2[1], 'bo', label='harbourF2')
-    ax.plot(interestPF1[0], interestPF1[1], 'ro', label='interestPF1')
+    # ax.plot(harbourF1[0], harbourF1[1], 'bo', label='harbourF1')
+    # ax.plot(harbourF2[0], harbourF2[1], 'bo', label='harbourF2')
+    # ax.plot(interestPF1[0], interestPF1[1], 'bo', label='interestPF1')
     
 
     # 设置初始点的坐标
     T1_x, T1_y, _ = shipT1.move()
     T2_x, T2_y, _ = shipT2.move()
     T3_x, T3_y, _ = shipT3.move()
+    
+    # F1_x, F1_y, _ = shipF1.move()
+    # F2_x, F2_y, _ = shipF2.move()
+    # F3_x, F3_y, _ = shipF3.move()
     # 设置时间步长和总时间
     dt = 0.01
 
@@ -128,14 +131,27 @@ def main():
         new_T1_x, new_T1_y, _ = shipT1.move()
         new_T2_x, new_T2_y, _ = shipT2.move()
         new_T3_x, new_T3_y, _ = shipT3.move()
+        
+        # new_F1_x, new_F1_y, _ = shipF1.move()
+        # new_F2_x, new_F2_y, _ = shipF2.move()
+        # new_F3_x, new_F3_y, _ = shipF3.move()
+        
         ax.plot([T1_x, new_T1_x], [T1_y, new_T1_y], 'b')
-        ax.plot([T2_x, new_T2_x], [T2_y, new_T2_y], 'y')
-        ax.plot([T3_x, new_T3_x], [T3_y, new_T3_y], 'g')
+        ax.plot([T2_x, new_T2_x], [T2_y, new_T2_y], 'b')
+        ax.plot([T3_x, new_T3_x], [T3_y, new_T3_y], 'b')
+        
+        # ax.plot([F1_x, new_F1_x], [F1_y, new_F1_y], 'k')
+        # ax.plot([F2_x, new_F2_x], [F2_y, new_F2_y], 'k')
+        # ax.plot([F3_x, new_F3_x], [F3_y, new_F3_y], 'k')
+        
         # 更新当前点的坐标
         T1_x, T1_y = new_T1_x, new_T1_y
         T2_x, T2_y = new_T2_x, new_T2_y
         T3_x, T3_y = new_T3_x, new_T3_y
         
+        # F1_x, F1_y = new_F1_x, new_F1_y
+        # F2_x, F2_y = new_F2_x, new_F2_y
+        # F3_x, F3_y = new_F3_x, new_F3_y
         # 刷新图形窗口
         plt.pause(dt)
 

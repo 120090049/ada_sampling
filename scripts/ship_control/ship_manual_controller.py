@@ -100,16 +100,16 @@ class Ship_controller:
             self.orient_send += 1 * math.pi/180
             
         if self.key == 'w':
-            self.ship_x_send += 0.5
+            self.ship_x_send += 5
        
         elif self.key == 's':
-            self.ship_x_send -= 0.5
+            self.ship_x_send -= 5
             
         elif self.key == 'a':
-            self.ship_y_send += 0.5
+            self.ship_y_send += 5
             
         elif self.key == 'd':
-            self.ship_y_send -= 0.5
+            self.ship_y_send -= 5
         
 
 
@@ -118,10 +118,10 @@ class Ship_controller:
             self.key = getKey()
             self.action_control()
             
-            self.ship_x_send += 0.1
+            self.ship_x_send += 0
             self.model_state_send.pose.position.x = self.ship_x_send
             self.model_state_send.pose.position.y = self.ship_y_send
-            
+            self.model_state_send.pose.position.z = -2
             self.model_state_send.pose.orientation = quaternion_from_yaw(self.orient_send)
             self.set_ship_state(self.model_state_send)
             if (controller.key == '\x03'):
@@ -144,11 +144,11 @@ CTRL-C to quit
     print(msg)
     settings = termios.tcgetattr(sys.stdin)
       # - vessel_g_1::link
-        # - vessel_g_pole::link
+        # - vessel_g_0::link
         # - vessel_d_0::link
         # - vessel_d_1::link
         # - vessel_d_2::link
-    vessel_id = "d_0" 
+    vessel_id = "d_1" 
     controller = Ship_controller(vessel_id)
     controller.main_loop()
     
