@@ -64,12 +64,9 @@ for i, gp in enumerate(GPs):
     X_train = np.random.uniform(x_min, x_max, size=(n_train, 2))
     y_train = f(X_train) + np.random.normal(0, σ_noise, size=(n_train,))
     gp.fit(X_train, y_train)
-    gp.fit(X_train, y_train)
     print(f"Learned kernel #{i}:\t{gp.kernel_}")
-    print(type(gp.kernel_))
+    # print(type(gp.kernel_))
 
-
-# In[5]:
 
 
 from GP_mixture import mix_GPs

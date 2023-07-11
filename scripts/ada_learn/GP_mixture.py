@@ -64,7 +64,7 @@ def mix_GPs(GPs_sklearn: List[GaussianProcessRegressor]):
     #         P_z[j, i] = 1
     #         j += 1
 
-    # initialize P_z uniformly
+    # initialize P_z uniformly (90,3) 90个datapoint属于GP_123的概率
     P_z = np.ones((len(X_train_combined), n)) / n
 
     P_z, P_z_history = EM_algorithm(X_train_combined, y_train_combined, GPs, P_z, return_P_Z_history=True)

@@ -13,14 +13,18 @@ def E_stage(X_train_combined, y_train_combined, GPs, P_z):
     N = np.zeros(P_z.shape)
 
     # compute observation likelihoods
-    for j, i in np.ndindex(P_z.shape):
+    for j, i in np.ndindex(P_z.shape): # i = 1,2,3
         q = X_train_combined[j]
         y = y_train_combined[j]
         # TODO: determine if this is the correct computation of var
         # TODO: make this more efficient
         y_hat, var = GPs[i].query([q])
-        N[j, i] = gaussian_pdf(y_hat, var, y)
-    
+        N[j, i] = gaussian_pdf(y_hat, var, y)  # P_z[j, i] =
+                                                # represents P(z(x_j) = i) #
+                                                # data point 被第ith GP 最优表示，最fit哪个GP
+                                                # N[j, i] = 
+                                                # query 的 datapoint 根据在 GP_i 中的 mean & variance
+                                                # 在该 datapoint 处，data的实际值被预测的GP_i取到的概率
     # print(N)
     
     # update P_z (as one batch)
