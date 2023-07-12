@@ -10,7 +10,10 @@ import math
 
 import queue
 from trajectory_gen.trajectory_gen import ShipTrajectoryGenerator
+import sys
 
+OPEN_ROS = False
+WRITE = False
 
 def quaternion_from_yaw(yaw):
     quat = Quaternion()
@@ -44,7 +47,15 @@ class Ship_controller:
 
         
 if __name__ == '__main__':
-    
+    print("with argument = 1: OPEN_ROS to send trajectory; arg = 2: write data; no argument: just show the trajectory")
+    if len(sys.argv) > 1:
+        number = int(sys.argv[1])
+        if number == 1:
+            OPEN_ROS = True
+        elif number == 2:
+            WRITE = True
+   
+        
     harbourT1 = np.array([400, 400])
     interestPT1 = np.array([800, 1500])
     interestPT2 = np.array([3700, 1000])
@@ -58,7 +69,6 @@ if __name__ == '__main__':
     
     wind=[0,2]
     wave=[2,0]
-    
     frequency = 0.05
     randomness= 0.02
     
@@ -71,8 +81,8 @@ if __name__ == '__main__':
     shipTs_pos = queue.Queue()
     shipFs_pos = queue.Queue()
     
-
-    command_sender = Ship_controller([-2400, -2000])
+    if OPEN_ROS:
+        command_sender = Ship_controller([-2400, -2000])
     
     # for tourist boats
     for i in range(shipT_num):
@@ -91,8 +101,10 @@ if __name__ == '__main__':
 # plot configuration
     fig, ax = plt.subplots()
 
-    ax.set_xlim(0, 4000)
-    ax.set_ylim(0, 2000)
+    size_x = 4000
+    size_y = 2000
+    ax.set_xlim(0, size_x)
+    ax.set_ylim(0, size_y)
     
     # wind and wave direction
     ax.arrow(200, 200, 150*wind[0], 150*wind[1], width=1, color='red')
@@ -113,21 +125,66 @@ if __name__ == '__main__':
 
     # 设置时间步长和总时间
     dt = 0.01
-    while True:
-        for i in range(shipT_num): # d is pleausure boat
-            x, y, orient = shipTs_tra[i].move()
-            command_sender.send("d_"+str(i), x, y, orient)
-            [pre_x, pre_y] = shipTs_pos.get()
-            shipTs_pos.put([x, y])
-            ax.plot([pre_x, x], [pre_y, y], 'b')
-            
-        for i in range(shipF_num): # g is fishboat
-            x, y, orient = shipFs_tra[i].move()
-            command_sender.send("g_"+str(i), x, y, orient)
-            [pre_x, pre_y] = shipFs_pos.get()
-            shipFs_pos.put([x, y])
-            ax.plot([pre_x, x], [pre_y, y], 'g')
-        # 刷新图形窗口
-        plt.pause(dt)
+    # Map_output = Map(width=size_x, height=size_y, grid_cell_size=10, fov_radius=100)
     
-    plt.show()
+    
+    if WRITE:
+        with open('ship_trajectory.txt', 'w') as file:
+            
+            
+            while True:
+                targets_cordinates = []
+                for i in range(shipT_num): # d is pleausure boat
+                    x, y, orient = shipTs_tra[i].move()
+                    targets_cordinates.append([x, y])
+                    if OPEN_ROS:
+                        command_sender.send("d_"+str(i), x, y, orient)
+                    
+                    [pre_x, pre_y] = shipTs_pos.get()
+                    shipTs_pos.put([x, y])
+                    ax.plot([pre_x, x], [pre_y, y], 'b')
+                    
+                for i in range(shipF_num): # g is fishboat
+                    x, y, orient = shipFs_tra[i].move()
+                    targets_cordinates.append([x, y])
+                    if OPEN_ROS:
+                        command_sender.send("g_"+str(i), x, y, orient)
+                    
+                    [pre_x, pre_y] = shipFs_pos.get()
+                    shipFs_pos.put([x, y])
+                    ax.plot([pre_x, x], [pre_y, y], 'g')
+                # map = Map_output.update_map(targets_cordinates)
+                plt.pause(dt)
+                for sublist in targets_cordinates:
+                    line = ' '.join(str(item) for item in sublist)
+                    file.write(line + '\n')
+                file.write('\n')
+
+            plt.show()
+            
+    else:
+        while True:
+            targets_cordinates = []
+            for i in range(shipT_num): # d is pleausure boat
+                x, y, orient = shipTs_tra[i].move()
+                targets_cordinates.append([x, y])
+                if OPEN_ROS:
+                    command_sender.send("d_"+str(i), x, y, orient)
+                
+                [pre_x, pre_y] = shipTs_pos.get()
+                shipTs_pos.put([x, y])
+                ax.plot([pre_x, x], [pre_y, y], 'b')
+                
+            for i in range(shipF_num): # g is fishboat
+                x, y, orient = shipFs_tra[i].move()
+                targets_cordinates.append([x, y])
+                if OPEN_ROS:
+                    command_sender.send("g_"+str(i), x, y, orient)
+                
+                [pre_x, pre_y] = shipFs_pos.get()
+                shipFs_pos.put([x, y])
+                ax.plot([pre_x, x], [pre_y, y], 'g')
+            # map = Map_output.update_map(targets_cordinates)
+            plt.pause(dt)
+
+        plt.show()
