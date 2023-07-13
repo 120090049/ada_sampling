@@ -77,7 +77,7 @@ if __name__ == '__main__':
             WRITE = True
     current_list = []
     Map_output = Map(length=4000, width=2000, grid_cell_size=20, fov_radius=300)
-    data_dict = {'length': Map_output.length, 'width': Map_output.width}
+    data_dict = {'map_length': Map_output.length, 'map_width': Map_output.width}
     
     with open('ship_trajectory.txt', 'r') as file:
         lines = file.readlines()
@@ -88,7 +88,7 @@ if __name__ == '__main__':
             if line == '':  # new time step
                 map, targets_on_map = Map_output.update_map(current_list)
                 map = 1 - map
-                data_dict['Xss'] = map
+                data_dict['F_map'] = map
                 data_dict['targets'] = targets_on_map
 
                 # print(map.shape)

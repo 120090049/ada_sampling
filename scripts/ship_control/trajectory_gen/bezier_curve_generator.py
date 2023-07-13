@@ -2,6 +2,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.special import comb
 
+def bezier_curve_length(control_points, num_samples=10):
+    t = np.linspace(0, 1, num_samples)
+
+    dx_dt = 2 * (1 - t) * (control_points[1][0] - control_points[0][0]) + 2 * t * (control_points[2][0] - control_points[1][0])
+    dy_dt = 2 * (1 - t) * (control_points[1][1] - control_points[0][1]) + 2 * t * (control_points[2][1] - control_points[1][1])
+    integrand = np.sqrt(dx_dt**2 + dy_dt**2)
+    length = np.sum(integrand) / num_samples
+    return length
+
 class BezierCurveGenerator:
     def __init__(self, interestPT1, interestPT2, control_PT, curvity, frequency = 10):
         self.interestPT1 = np.array(interestPT1)
@@ -29,8 +38,8 @@ class BezierCurveGenerator:
         self.generate_ctr_point()
         control_points = [self.interestPT1, self.MID_PT, self.interestPT2]
 
-        length = (1.2)**(np.linalg.norm(10*self.var + self.control_PT)) * np.linalg.norm(self.interestPT2 - self.interestPT1)
-        
+        # length = (1.2)**(np.linalg.norm(10*self.var + self.control_PT)) * np.linalg.norm(self.interestPT2 - self.interestPT1)
+        length = bezier_curve_length(control_points)
         t = np.linspace(0, 1, int(length*self.frequency))
         curve_points = np.array([self.bezier_curve(ti, control_points) for ti in t]) 
         return curve_points

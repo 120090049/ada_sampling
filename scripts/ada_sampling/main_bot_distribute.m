@@ -11,7 +11,7 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
 global num_gau num_bot Xss Fss eta
 
 load('sample_data_stalk_count.mat'); % use stalk count data
-
+map_res
 def_hyp2.mean = [];
 def_hyp2.cov = [0.5 0.5];
 def_hyp2.lik = -2;
@@ -66,7 +66,7 @@ d = size(Xss,2); %2
 rng(200)
 g=[];
 
-[label_rss, model_rss, llh_rss] = mixGaussEm_gmm(Fss', num_gau); % centralized GMM version
+[label_rss, model_rss, ~] = mixGaussEm_gmm(Fss', num_gau); % centralized GMM version
 
 if unique(label_rss)~=num_gau
     error('reduce num_gau!');

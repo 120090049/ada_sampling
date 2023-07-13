@@ -8,10 +8,9 @@
 function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot_distribute(varargin)
     global num_gau num_bot Xss Fss eta
     
-    load('sample_data_stalk_count.mat'); % use stalk count data
-    
-    [Xss, ksx_g, ksy_g] = generate_coordinates(length, width);
-    
+    load('ship_trajectory.mat'); % use stalk count data
+    [Xss, ksx_g, ksy_g] = generate_coordinates(map_length, map_width);
+    Fss = reshape(F_map, [], 1);
     
     def_hyp2.mean = [];
     def_hyp2.cov = [0.5 0.5];
@@ -20,7 +19,7 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
     parser = inputParser;
     addOptional(parser, 'algo', 'gmm'); % how to select break-off swarm
     addOptional(parser, 'bots', []);
-    addOptional(parser, 'num_gau', 3);
+    addOptional(parser, 'num_gau', 2);
     addOptional(parser, 'beta', 1);
     addOptional(parser, 'unit_sam', 3);
     addOptional(parser, 'eta', 0.1);
@@ -67,7 +66,7 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
     rng(200)
     g=[];
     
-    [label_rss, model_rss, llh_rss] = mixGaussEm_gmm(Fss', num_gau); % centralized GMM version
+    [label_rss, model_rss, ~] = mixGaussEm_gmm(Fss', num_gau); % centralized GMM version
     
     if unique(label_rss)~=num_gau
         error('reduce num_gau!');
@@ -75,10 +74,10 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
     
     pilot_Xs_stack = zeros(unit_sam*num_gau,2,num_bot);
     
-    for ikoo = 1:num_bot % get random 9 points for initialization
+    for ikoo = 1:num_bot % get random 9 points for initialization % get 9 points from 3 gaussian
         ind_ttmp = zeros(unit_sam,num_gau);
         
-        for kik = 1:num_gau % get 9 points from 3 gaussian
+        for kik = 1:num_gau 
             sap_tmp = find(label_rss==kik); % points of the kik th gaussian
             ind_ttmp(:,kik) = sap_tmp(randperm(length(sap_tmp),unit_sam)); % get 3 points from kik th gaussian
         end
@@ -212,7 +211,6 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
     % step 2,3
         if ~stop_flag
             while loop_flag  % for first round, use neighbors defined by default from the part of initialization above
-                
                 for ijk = 1:num_bot
                     %             bots(ijk).neighbor = find(adj_A(ijk,:)>0);   % confirm neighbors
                     bots = transmitPacket(bots, ijk); % update communication packets
@@ -378,7 +376,7 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
         for i = 1:s_num
             cf(it) = cf(it)+((s(1,i)-g(1,k(i))).*Fss(i))^2+((s(2,i)-g(2,k(i))).*Fss(i)) ^2;  % get summation of distance to goal
         end
-        
+        pause()
         %  Display the energy.
         %
         figure(21);
@@ -453,8 +451,8 @@ end
 
 
 function idx = get_idx(Xtest, Xs)
-Distance = pdist2(Xtest, Xs,'euclidean');
-[~, idx] = min(Distance,[],2);
+    Distance = pdist2(Xtest, Xs,'euclidean');
+    [~, idx] = min(Distance,[],2);
 end
 
 % Transmit bot n's packet to any neighbors for whom packetLost returns false
@@ -473,92 +471,99 @@ end
 
 
 function bots = updateBotComputations(bots, n)
-global Fss eta
-num_gau = numel(bots(n).alpha_K);
-Nm = length(bots(n).Nm_ind);        %  initialization
-
-% resort bot mu and ind
-% [~, resort_ind] = sort(bots(n).mu_K, 'ascend'); % in case some components are with different orders during each node local computation
-% bots(n).mu_K = bots(n).mu_K(resort_ind);
-% bots(n).Sigma_K = bots(n).Sigma_K(:,:,resort_ind);
-% bots(n).alpha_K = bots(n).alpha_K(resort_ind);
-
-model = struct;
-model.mu = bots(n).mu_K;
-model.Sigma = bots(n).Sigma_K;
-model.w = norm_prob(bots(n).alpha_K); %bots(n).alpha_K;
-
-%      [label, model, llh, break_flag] = mixGaussEm_rss(Fss(bots(n).Nm_ind)', num_gau);
-[~, alpha_mnk] = mixGaussPred_gmm(Fss(bots(n).Nm_ind)', model); % get alpha_mnk:   Nm x num_gau
-
-self_alpha = sum(alpha_mnk,1); %./Nm;  % 1 x num_gau    Nm*alpha_mk
-y_mn = Fss(bots(n).Nm_ind);    %   Nm x 1
-self_belta = sum(alpha_mnk.*y_mn,1);  %  1 x num_gau  belta_mk
-self_gamma = sum(((repmat(y_mn,[1,num_gau])-model.mu).^2).*alpha_mnk, 1);  %  1 x num_gau
-
-bots(n).self_alpha = self_alpha;
-bots(n).self_belta = self_belta;
-bots(n).self_gamma = self_gamma;
-
-%% after compute local summary stats, we update estimate of global stats using packets
-% without considering age of the packets
-
-num_neighbor = length(bots(n).neighbor);
-
-%% start consensus based dynamic estimation process
-stack_alpha_neighbor = reshape([bots(n).packets(bots(n).neighbor).alpha_K].',[num_gau, num_neighbor]).';
-stack_belta_neighbor = reshape([bots(n).packets(bots(n).neighbor).belta_K].',[num_gau, num_neighbor]).';
-stack_gamma_neighbor = reshape([bots(n).packets(bots(n).neighbor).gamma_K].',[num_gau, num_neighbor]).';
-
-%  note the difference self_alpha should be Nm*alpha or just alpha ?
-bots(n).dot_alpha_K = sum(stack_alpha_neighbor - bots(n).alpha_K,1) + bots(n).self_alpha - bots(n).alpha_K; 
-bots(n).dot_belta_K = sum(stack_belta_neighbor - bots(n).belta_K,1) + bots(n).self_belta - bots(n).belta_K;
-bots(n).dot_gamma_K = sum(stack_gamma_neighbor - bots(n).gamma_K,1) + bots(n).self_gamma - bots(n).gamma_K;
-
-bots(n).alpha_K = bots(n).alpha_K + eta*bots(n).dot_alpha_K;
-bots(n).belta_K = bots(n).belta_K + eta*bots(n).dot_belta_K;
-bots(n).gamma_K = bots(n).gamma_K + eta*bots(n).dot_gamma_K;
-
-
-bots(n).Sigma_K = bots(n).gamma_K./bots(n).alpha_K;
-bots(n).mu_K = bots(n).belta_K./(bots(n).alpha_K);
-
-kss = zeros(1,1,num_gau);
-for ijj = 1:num_gau
+    global Fss eta
+    num_gau = numel(bots(n).alpha_K);
+    Nm = length(bots(n).Nm_ind);        %  initialization
     
-    if bots(n).Sigma_K(ijj)<10^-5
-        pause;
+    % resort bot mu and ind
+    % [~, resort_ind] = sort(bots(n).mu_K, 'ascend'); % in case some components are with different orders during each node local computation
+    % bots(n).mu_K = bots(n).mu_K(resort_ind);
+    % bots(n).Sigma_K = bots(n).Sigma_K(:,:,resort_ind);
+    % bots(n).alpha_K = bots(n).alpha_K(resort_ind);
+    
+    model = struct;
+    model.mu = bots(n).mu_K;
+    model.Sigma = bots(n).Sigma_K;
+    model.w = norm_prob(bots(n).alpha_K); %bots(n).alpha_K;
+    
+    %      [label, model, llh, break_flag] = mixGaussEm_rss(Fss(bots(n).Nm_ind)', num_gau);
+    [~, alpha_mnk] = mixGaussPred_gmm(Fss(bots(n).Nm_ind)', model); % get alpha_mnk:   label and responsibility(Nm * num_gau)
+        %1.0000         0
+        %1.0000         0
+        %1.0000         0
+        %1.0000         0
+        %1.0000         0
+        %0.0299    0.9701
+        %1.0000         0
+    
+    self_alpha = sum(alpha_mnk,1); %./Nm;  % 1 x num_gau    Nm*alpha_mk
+    y_mn = Fss(bots(n).Nm_ind);    %   Nm x 1
+    self_belta = sum(alpha_mnk.*y_mn,1);  %  1 x num_gau  belta_mk
+    self_gamma = sum(((repmat(y_mn,[1,num_gau])-model.mu).^2).*alpha_mnk, 1);  %  1 x num_gau
+    
+    bots(n).self_alpha = self_alpha;
+    bots(n).self_belta = self_belta;
+    bots(n).self_gamma = self_gamma;
+    
+    %% after compute local summary stats, we update estimate of global stats using packets
+    % without considering age of the packets
+    
+    num_neighbor = length(bots(n).neighbor);
+    
+    %% start consensus based dynamic estimation process
+    stack_alpha_neighbor = reshape([bots(n).packets(bots(n).neighbor).alpha_K].',[num_gau, num_neighbor]).';
+    stack_belta_neighbor = reshape([bots(n).packets(bots(n).neighbor).belta_K].',[num_gau, num_neighbor]).';
+    stack_gamma_neighbor = reshape([bots(n).packets(bots(n).neighbor).gamma_K].',[num_gau, num_neighbor]).';
+    
+    %  note the difference self_alpha should be Nm*alpha or just alpha ?
+    bots(n).dot_alpha_K = sum(stack_alpha_neighbor - bots(n).alpha_K,1) + bots(n).self_alpha - bots(n).alpha_K; 
+    bots(n).dot_belta_K = sum(stack_belta_neighbor - bots(n).belta_K,1) + bots(n).self_belta - bots(n).belta_K;
+    bots(n).dot_gamma_K = sum(stack_gamma_neighbor - bots(n).gamma_K,1) + bots(n).self_gamma - bots(n).gamma_K;
+    
+    bots(n).alpha_K = bots(n).alpha_K + eta*bots(n).dot_alpha_K;
+    bots(n).belta_K = bots(n).belta_K + eta*bots(n).dot_belta_K;
+    bots(n).gamma_K = bots(n).gamma_K + eta*bots(n).dot_gamma_K;
+    
+    
+    bots(n).Sigma_K = bots(n).gamma_K./bots(n).alpha_K;
+    bots(n).mu_K = bots(n).belta_K./(bots(n).alpha_K);
+    
+    kss = zeros(1,1,num_gau);
+    for ijj = 1:num_gau
+        
+        %if bots(n).Sigma_K(ijj)<10^-5
+        %    pause;
+        %end
+        
+        kss(:,:,ijj) = bots(n).Sigma_K(ijj);
     end
+    bots(n).Sigma_K = kss;
     
-    kss(:,:,ijj) = bots(n).Sigma_K(ijj);
-end
-bots(n).Sigma_K = kss;
-
-
-
-
-%% end of estimation and parameter updates
-
-
-bots(n).packets(n).alpha_K = bots(n).alpha_K;
-bots(n).packets(n).belta_K = bots(n).belta_K;
-bots(n).packets(n).gamma_K = bots(n).gamma_K;
+    
+    
+    
+    %% end of estimation and parameter updates
+    
+    
+    bots(n).packets(n).alpha_K = bots(n).alpha_K;
+    bots(n).packets(n).belta_K = bots(n).belta_K;
+    bots(n).packets(n).gamma_K = bots(n).gamma_K;
 
 end
 
 
 
 function y = loggausspdf(X, mu, Sigma)
-d = size(X,1);   %  X:   d x Nm
-X = bsxfun(@minus,X,mu);
-[U,p]= chol(Sigma);
-if p ~= 0
-    error('ERROR: Sigma is not PD.');
-end
-Q = U'\X;
-q = dot(Q,Q,1);  % quadratic term (M distance)
-c = d*log(2*pi)+2*sum(log(diag(U)));   % normalization constant
-y = -(c+q)/2;
+    d = size(X,1);   %  X:   d x Nm
+    X = bsxfun(@minus,X,mu);
+    [U,p]= chol(Sigma);
+    if p ~= 0
+        error('ERROR: Sigma is not PD.');
+    end
+    Q = U'\X;
+    q = dot(Q,Q,1);  % quadratic term (M distance)
+    c = d*log(2*pi)+2*sum(log(diag(U)));   % normalization constant
+    y = -(c+q)/2;
 end
 
 function y = norm_prob(X)
@@ -568,12 +573,10 @@ end
 
 
 function [Xss, ksx_g, ksy_g] = generate_coordinates(length, width)
-    y = repmat(0:length-1, 1, width);
-    x = repmat(0:width-1, length, 1);
-    x = x(:)';
-    y = y(:)';
-    Xss = [x; y]';
-    
+    length = double(length);
+    width = double(width);
+    [X, Y] = meshgrid(0:length-1, 0:width-1);
+    Xss = [X(:), Y(:)];
     ksx_g = repmat(0:width-1, length, 1);
     ksy_g = repmat(0:length-1, width, 1)';
 end
