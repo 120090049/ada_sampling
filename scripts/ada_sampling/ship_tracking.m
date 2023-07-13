@@ -21,7 +21,7 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
     addOptional(parser, 'bots', []);
     addOptional(parser, 'num_gau', 2);
     addOptional(parser, 'beta', 1);
-    addOptional(parser, 'unit_sam', 3);
+    addOptional(parser, 'unit_sam', 30);
     addOptional(parser, 'eta', 0.1);
     addOptional(parser, 'g_num', 3);
     addOptional(parser, 'hyp2_new', def_hyp2);
@@ -45,9 +45,9 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
     
     
     %%%%%%%%%%%%%%%%%%% dataset dependent variables
-    map_x = 20;
-    map_y = 44;
-    map_z = [4,13];
+    map_x = map_width;
+    map_y = map_length;
+    map_z = [0,1];
     % beta = 1; % beta for GP-UCB:   mu + beta*s2
     % num_gau = 3;
     % unit_sam = 3; % draw some samples from each distribution
@@ -72,6 +72,8 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
         error('reduce num_gau!');
     end
     
+    
+    % get initial data of the distance map (3 from each gaussian component)
     pilot_Xs_stack = zeros(unit_sam*num_gau,2,num_bot);
     
     for ikoo = 1:num_bot % get random 9 points for initialization % get 9 points from 3 gaussian
@@ -79,7 +81,7 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
         
         for kik = 1:num_gau 
             sap_tmp = find(label_rss==kik); % points of the kik th gaussian
-            ind_ttmp(:,kik) = sap_tmp(randperm(length(sap_tmp),unit_sam)); % get 3 points from kik th gaussian
+            ind_ttmp(:,kik) = sap_tmp(randperm(length(sap_tmp),unit_sam)); % get unit_sam=3 points from kik th gaussian
         end
         
         ind_ttmp = ind_ttmp(:);
@@ -376,7 +378,6 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
         for i = 1:s_num
             cf(it) = cf(it)+((s(1,i)-g(1,k(i))).*Fss(i))^2+((s(2,i)-g(2,k(i))).*Fss(i)) ^2;  % get summation of distance to goal
         end
-        pause()
         %  Display the energy.
         %
         figure(21);
@@ -575,7 +576,7 @@ end
 function [Xss, ksx_g, ksy_g] = generate_coordinates(length, width)
     length = double(length);
     width = double(width);
-    [X, Y] = meshgrid(0:length-1, 0:width-1);
+    [X, Y] = meshgrid(0:width-1, 0:length-1);
     Xss = [X(:), Y(:)];
     ksx_g = repmat(0:width-1, length, 1);
     ksy_g = repmat(0:length-1, width, 1)';
