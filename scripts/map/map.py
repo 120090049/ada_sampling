@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -68,16 +69,18 @@ class Map:
     
 
 if __name__ == '__main__':
-    print("with argument = 1: write data (no map); no argmuent show 3D map (no data writing)")
+    WRITE = False
+    print("with argument = 1: write data; no argmuent just show 3D map (no data writing)")
     if len(sys.argv) > 1:
         number = int(sys.argv[1])
         if number == 1:
-            OPEN_ROS = True
-        elif number == 2:
             WRITE = True
+        else:
+            WRITE = False
     current_list = []
-    Map_output = Map(length=4000, width=2000, grid_cell_size=20, fov_radius=300)
+    Map_output = Map(length=4000, width=2000, grid_cell_size=100, fov_radius=400)
     data_dict = {'map_length': Map_output.length, 'map_width': Map_output.width}
+    
     
     with open('ship_trajectory.txt', 'r') as file:
         lines = file.readlines()
@@ -95,11 +98,12 @@ if __name__ == '__main__':
                 # print(targets_on_map)
                 Map_output.print_map()
                 current_list = []
+                plt.pause(3)
                 break
             else:  # 解析列表的行数据
                 sublist = [float(item) for item in line.split()]
                 current_list.append(sublist)
                 
-         
-    sio.savemat('ship_trajectory.mat', data_dict, appendmat=False)
-    print("Successfully saved")
+    if WRITE:     
+        sio.savemat('ship_trajectory.mat', data_dict, appendmat=False)
+        print("Successfully saved")
