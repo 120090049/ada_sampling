@@ -297,8 +297,10 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
         est_s2_filtered(nearby_coords_index) = est_s2(nearby_coords_index);
         
         %% HEURISTIC FUNCTION
-        beta = 2;
-        phi_func = est_mu + beta*est_s2_filtered;
+        beta = 20;
+        phi_func = est_mu + beta*est_s2;
+        
+        % phi_func = est_mu + beta*est_s2_filtered;
 
         % evaluate prediction perfermance
             idx_train = unique([bots.Nm_ind]); % 3 column, 1 for each bots
