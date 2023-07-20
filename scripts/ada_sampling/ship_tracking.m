@@ -93,20 +93,10 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
         pilot_Xs_stack(:,:,ikoo) = Xss(ind_ttmp,:);
     end
 
-    % pilot_Xs_stack = zeros(4,2,num_bot);
-    % for ikoo = 1:num_bot % get random 9 points for initialization % get 9 points from 3 gaussian
-    %     ind_ttmp = [];
-    %     ind_ttmp = vertcat(ind_ttmp, get_idx(flip(round(targets(1, :))), Xss));
-    %     ind_ttmp = vertcat(ind_ttmp, get_idx(flip(round(targets(3, :))), Xss));
-    %     ind_ttmp = vertcat(ind_ttmp, get_idx(flip(round(targets(5, :))), Xss));
-    %     ind_ttmp = vertcat(ind_ttmp, get_idx(flip(round(targets(7, :))), Xss));
-    %     pilot_Xs_stack(:,:,ikoo) = Xss(ind_ttmp,:);
-    % 
-    % end
     
     %% Bots initialization
     if isempty(bots)  %nargin < 1
-    
+        
         init_abg = zeros(1,num_gau);
         tmp_init = cell(1,num_bot);
         [tmp_init{:}] = deal(init_abg);
@@ -118,7 +108,7 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
         packets = struct('alpha_K',[],'belta_K',[],'gamma_K',[]);
         
         
-        %% set initial position of the bots
+        % set initial position of the bots
         for ijk = 1:num_bot % get all init points (10th is the starting point)
             bots(ijk).Xs = pilot_Xs_stack(:,:,ijk); % starting points for the robots, can be set of points from pilot survey
             
@@ -136,7 +126,7 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
         end
         % seperate into two loops since we want separate control of rng,
         % otherwise the above commands will generate same robot positions.
-        
+ 
         for ijk = 1:num_bot
             %% eq 13 get local GMM
             % get local GMM with only 10 known data % initialize: model.mu, Sigma, alpha
@@ -177,12 +167,11 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
             packets.gamma_K = bots(ijk).gamma_K;
             bots(ijk).packets(ijk) = packets;
         end
+
         
-        
-    else
-        g_num = length(bots);
-        num_bot = g_num;
     end
+   
+
     g = g';
     
     
@@ -192,7 +181,6 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
     
     
     %  Carry out the iteration.
-    %
     step = 1 : it_num;
     cf = nan(it_num, 1);
     max_mis = nan(it_num, 1);
@@ -257,11 +245,23 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
         
 
         %% step 4 + 5 + 6-1 
+        pred_h_list = cell(1, num_bot);
+        pred_Var_list = cell(1, num_bot);
+        for i = 1:num_bot
+            pred_h_list{i} = zeros(length(Fss), 1);
+            pred_Var_list{i} = zeros(length(Fss), 1);
+        end
+
         pred_h = zeros(length(Fss),1);
         pred_Var = zeros(length(Fss),1);
-    
-        for iij = 1:num_bot % for each robot use its local data and use learned GMM model to predict environmental phenomenon
-            [pred_h(index_label==iij), pred_Var(index_label==iij), ~] = gmm_pred_wafr(Xss(index_label==iij,:), Fss(index_label==iij), bots(iij), 'hyp2_new', hyp2_new);
+        
+        for i = 1:num_bot % for each robot use its local data and use learned GMM model to predict environmental phenomenon
+            [h, Var, ~] = gmm_pred_wafr(Xss(index_label==i,:), Fss(index_label==i), bots(i), 'hyp2_new', hyp2_new);
+            pred_h(index_label==i) = h;
+            pred_Var(index_label==i) = Var;
+            % [pred_h(index_label==iij), pred_Var(index_label==iij), ~] = gmm_pred_wafr(Xss(index_label==iij,:), Fss(index_label==iij), bots(iij), 'hyp2_new', hyp2_new);
+            pred_h_list{i}(index_label==i) = h;
+            pred_Var_list{i}(index_label==i) = Var;
         end
         
         %% 6-2 evaluate h(q)

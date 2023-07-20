@@ -17,34 +17,6 @@ class Map:
         self.grid_cell_size = int(grid_cell_size)
         self.fov_radius = fov_radius/self.grid_cell_size
         self.coordiates = None
-        # meshgrid length and width
-        self.x, self.y = np.meshgrid(np.linspace(0, width, int(width/grid_cell_size)), np.linspace(0, length, int(length/grid_cell_size)))
-
-        # smooth kenerl function
-        
-        if (THREED):
-            self.ax = plt.axes(projection='3d')
-            self.ax.set_xlabel('X')
-            self.ax.set_ylabel('Y')
-            self.ax.set_zlabel('Z')
-
-            self.ax.set_title('Distance Map')
-            
-            self.ax.set_box_aspect([1, 2, 0.5])
-            x_major_locator = MultipleLocator(1000)
-            self.ax.xaxis.set_major_locator(x_major_locator)
-            y_major_locator = MultipleLocator(1000)
-            self.ax.yaxis.set_major_locator(y_major_locator)
-            z_major_locator = MultipleLocator(0.5)
-            self.ax.zaxis.set_major_locator(z_major_locator)
-        else:
-            self.ax = plt.axes()
-            self.ax.set_xlabel('x')
-            self.ax.set_ylabel('y')
-            self.ax.set_title('smoothed_map')
-
-        plt.grid(True)
-        plt.ion()  # interactive mode on!!!! 很重要，有了它就不需要 plt.show() 了
 
     # def generate_kernel(self):
     #     self.kernel = 
@@ -77,16 +49,41 @@ class Map:
         return self.map, targets_on_map
 
     def print_map(self):
-        self.ax.cla()  # 清除上一时刻的曲面
         # self.ax.plot_surface(self.x, self.y, self.map, cmap='viridis', alpha=0.8, rstride=1, cstride=1, shade=False)
         # self.ax.contourf(self.x, self.y, self.map, cmap='viridis')
 
         if (THREED):
-            self.ax.plot_surface(self.x, self.y, self.map, cmap='viridis', alpha=0.8, rstride=1, cstride=1, shade=False)
+            ax.plot_surface(self.x, self.y, self.map, cmap='viridis', alpha=0.8, rstride=1, cstride=1, shade=False)
         else:
-            # mesh = self.ax.pcolormesh(self.x, self.y, self.map, cmap='viridis')
-            # plt.colorbar(mesh)
-            self.ax.pcolormesh(self.x, self.y, self.map, cmap='viridis', shading='auto')
+            mesh = self.ax.pcolormesh(self.x, self.y, self.map, cmap='viridis')
+            plt.colorbar(mesh)
+
+        # meshgrid length and width
+        self.x, self.y = np.meshgrid(np.linspace(0, width, int(width/grid_cell_size)), np.linspace(0, length, int(length/grid_cell_size)))
+
+        # smooth kenerl function
+        
+        if (THREED):
+            ax = plt.axes(projection='3d')
+            ax.set_xlabel('X')
+            ax.set_ylabel('Y')
+            ax.set_zlabel('Z')
+
+            ax.set_title('Distance Map')
+            
+            ax.set_box_aspect([1, 2, 0.5])
+            
+            x_major_locator = MultipleLocator(1000)
+            ax.xaxis.set_major_locator(x_major_locator)
+            y_major_locator = MultipleLocator(1000)
+            ax.yaxis.set_major_locator(y_major_locator)
+            
+        else:
+            ax = plt.axes()
+            ax.set_xlabel('x')
+            ax.set_ylabel('y')
+            ax.set_title('smoothed_map')
+
 
             
         x_points = [coord[0]+10 for coord in self.coordiates[:]]
@@ -94,29 +91,16 @@ class Map:
         z_points = np.zeros_like(x_points)
         if (THREED):
             self.ax.scatter(y_points, x_points, z_points, color='red', s=10)
-        else:
-            self.ax.scatter(y_points, x_points, color='red', s=1)
+            
+        plt.show()
 
-
-        plt.draw()
-        plt.pause(0.01)
+        # plt.draw()
+        # plt.pause(0.1)
         
     
 
 if __name__ == '__main__':
-    WRITE = False
-    print("with argument = 1: write data; no argmuent just show 3D map (no data writing)")
-    if len(sys.argv) > 1:
-        number = int(sys.argv[1])
-        if number == 1:
-            WRITE = True
-        else:
-            WRITE = False
-    current_list = []
-    Map_output = Map(length=4000, width=2000, grid_cell_size=20, fov_radius=300)
-    data_dict = {'map_length': Map_output.length, 'map_width': Map_output.width}
-    
-    
+   
     with open('ship_trajectory.txt', 'r') as file:
         lines = file.readlines()
         
@@ -125,16 +109,8 @@ if __name__ == '__main__':
             
             if line == '':  # new time step
                 map, targets_on_map = Map_output.update_map(current_list)
-                map = 1 - map
-                data_dict['F_map'] = map
-                data_dict['targets'] = targets_on_map
-
-                # print(map.shape)
-                # print(targets_on_map)
-                Map_output.print_map()
-                current_list = []
-                # plt.pause(50)
-                # break
+                
+                break
             else:  # 解析列表的行数据
                 sublist = [float(item) for item in line.split()]
                 current_list.append(sublist)

@@ -31,7 +31,7 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
     hyp2_new = parser.Results.hyp2_new;
     
     %% dataset dependent variables
-    num_gau = 4; % GMM
+    num_gau = 3; % GMM
     beta = 1;    % beta for GP-UCB:   mu + beta*s2
     
     eta = 0.1; % consensus filter
@@ -43,7 +43,7 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
     it_num = 40;
     save_flag = false;
     
-    unit_sam = 5;  % draw some samples from each distribution
+    unit_sam = 4;  % draw some samples from each distribution
     num_init_sam = unit_sam*num_gau + 1;%10; % initial number of samples for each robot
     
     stop_flag = 0;
@@ -51,8 +51,9 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
     
     rng(200)
     g=[];
-    
 
+    plot_3Dsurf(10, reshape(Fss,[size(ksx_g,1),size(ksx_g,2)]), [0,1]);
+    
     %% Add noise to Fss data==0, to fit the GMM
         noise = normrnd(0.1, 0.05, size(Fss)); % 标准差为0.03
         Fss_zero_indices = (Fss == 0); % 选择 Fss 中为0的元素的逻辑索引
@@ -65,36 +66,43 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
             error('reduce num_gau!');
             return;
         end
-        % 使用 unique 函数获取数组中的唯一元素
+
         uniqueElements = unique(label_rss);
         
         % 使用 histcounts 函数统计每个唯一元素的个数
         counts = histcounts(label_rss, [uniqueElements, max(uniqueElements)+1]);
-        
-        % 显示每个唯一元素及其个数
-        % 显示每个唯一元素及其个数
+
         for i = 1:num_gau
             fprintf('Gaussian %d has：%d, Sigma=%d, mu=%d\n', i, counts(i), model_rss.Sigma(:,:,i), model_rss.mu(i) );
         end
         disp(model_rss);
         
-
+    
     %% get initial data of the distance map (3 from each gaussian component)
     pilot_Xs_stack = zeros(unit_sam*num_gau,2,num_bot);
-    
     for ikoo = 1:num_bot % get random 9 points for initialization % get 9 points from 3 gaussian
+        
         ind_ttmp = zeros(unit_sam,num_gau);
         
         for kik = 1:num_gau 
             sap_tmp = find(label_rss==kik); % points of the kik th gaussian
             ind_ttmp(:,kik) = sap_tmp(randperm(length(sap_tmp),unit_sam)); % get unit_sam=3 points from kik th gaussian
         end
-        
+
         ind_ttmp = ind_ttmp(:);
-        
         pilot_Xs_stack(:,:,ikoo) = Xss(ind_ttmp,:);
-        
     end
+
+    % pilot_Xs_stack = zeros(4,2,num_bot);
+    % for ikoo = 1:num_bot % get random 9 points for initialization % get 9 points from 3 gaussian
+    %     ind_ttmp = [];
+    %     ind_ttmp = vertcat(ind_ttmp, get_idx(flip(round(targets(1, :))), Xss));
+    %     ind_ttmp = vertcat(ind_ttmp, get_idx(flip(round(targets(3, :))), Xss));
+    %     ind_ttmp = vertcat(ind_ttmp, get_idx(flip(round(targets(5, :))), Xss));
+    %     ind_ttmp = vertcat(ind_ttmp, get_idx(flip(round(targets(7, :))), Xss));
+    %     pilot_Xs_stack(:,:,ikoo) = Xss(ind_ttmp,:);
+    % 
+    % end
     
     %% Bots initialization
     if isempty(bots)  %nargin < 1
@@ -186,8 +194,6 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
     %  Carry out the iteration.
     %
     step = 1 : it_num;
-    e = nan ( it_num, g_num );
-    gm = nan ( it_num, 1 );
     cf = nan(it_num, 1);
     max_mis = nan(it_num, 1);
     rms_stack = nan(it_num, 1);
@@ -221,7 +227,7 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
                 end
              
                 cur_iter = cur_iter+1;
-                if cur_iter > max_iter
+                if cur_iter > max_iter % transimit 1000 times
                     break;
                 end
            
@@ -251,20 +257,60 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
         
 
         %% step 4 + 5 + 6-1 
+        pred_h_list = cell(1, num_bot);
+        pred_Var_list = cell(1, num_bot);
+        for i = 1:num_bot
+            pred_h_list{i} = zeros(length(Fss), 1);
+            pred_Var_list{i} = zeros(length(Fss), 1);
+        end
+
         pred_h = zeros(length(Fss),1);
         pred_Var = zeros(length(Fss),1);
-        %     pred_rms = zeros(length(num_bot),1);
-     
-    
-        for iij = 1:num_bot % for each robot use its local data and use learned GMM model to predict environmental phenomenon
-            [pred_h(index_label==iij), pred_Var(index_label==iij), ~] = gmm_pred_wafr(Xss(index_label==iij,:), Fss(index_label==iij), bots(iij), 'hyp2_new', hyp2_new);
+        
+        for i = 1:num_bot % for each robot use its local data and use learned GMM model to predict environmental phenomenon
+            [h, Var, ~] = gmm_pred_wafr(Xss(index_label==i,:), Fss(index_label==i), bots(i), 'hyp2_new', hyp2_new);
+            pred_h(index_label==i) = h;
+            pred_Var(index_label==i) = Var;
+            % [pred_h(index_label==iij), pred_Var(index_label==iij), ~] = gmm_pred_wafr(Xss(index_label==iij,:), Fss(index_label==iij), bots(iij), 'hyp2_new', hyp2_new);
+            pred_h_list{i}(index_label==i) = h;
+            pred_Var_list{i}(index_label==i) = Var;
         end
         
         %% 6-2 evaluate h(q)
-        est_mu = abs(pred_h);
+        est_mu = pred_h;
+        est_mu(est_mu > 1) = 1;
+        est_mu(est_mu < 0) = 0;
         est_s2 = abs(pred_Var);
-        phi_func = est_mu + beta*est_s2;
+        % beta = 10;
         
+        
+        %% operate on s2   
+        % 目标半径
+        radius = 5;
+        bots_location = g';
+        nearby_coords = [];
+        
+        % 遍历每个给定的坐标
+        for i = 1:size(bots_location, 1)
+            % 计算当前坐标与其他坐标的欧几里得距离
+            distances = sqrt(sum((Xss - bots_location(i, :)).^2, 2));
+            
+            % 选择距离在半径范围内的坐标
+            nearby_coords = [nearby_coords; Xss(distances <= radius, :)];
+        end
+        nearby_coords = unique(nearby_coords, 'rows');
+
+        nearby_coords_index = get_idx(nearby_coords, Xss);
+        
+        % 创建一个与 est_s2 大小相同的全零数组
+        est_s2_filtered = zeros(size(est_s2));
+        
+        % 使用逻辑索引保留相应元素
+        est_s2_filtered(nearby_coords_index) = est_s2(nearby_coords_index);
+        
+        %% HEURISTIC FUNCTION
+        beta = 2;
+        phi_func = est_mu + beta*est_s2_filtered;
 
         % evaluate prediction perfermance
             idx_train = unique([bots.Nm_ind]); % 3 column, 1 for each bots
@@ -321,7 +367,7 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
         g_actual(1,m>0) = sumx(m~=0) ./ m(m~=0);   % get x coordinate for the actual centroid
         g_actual(2,m>0) = sumy(m~=0) ./ m(m~=0);   % get y coordinate for the actual centroid
         
-        % get centroid coordinate
+        %% Done get centroid coordinate
         proj_g_idx = get_idx(g_new', Xss);    % get idx of the inferred centroid
         proj_g_idx_actual = get_idx(g_actual', Xss);  % get idx of the actual centroid
 
@@ -330,7 +376,7 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
             
     
         
-        figure(50);
+        figure(1);
 %% plot mu       
         plot_surf2( ksx_g,ksy_g,reshape(est_mu,[size(ksx_g,1),size(ksx_g,2)]), map_x, map_y, map_z,25, 5);
         % plot_surf2( ksx_g,ksy_g,reshape(Fss,[size(ksx_g,1),size(ksx_g,2)]), map_x, map_y, map_z,25, 5);
@@ -344,7 +390,7 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
 %% plot trajectory       
         for idx_plot = 1:g_num % bots trajectory print
             
-            plot(bots(idx_plot).Xs(num_init_sam:end,1),bots(idx_plot).Xs(num_init_sam:end,2),'LineWidth',5,'Color',lineStyles(1,:));
+            plot(bots(idx_plot).Xs(num_init_sam:end,1),bots(idx_plot).Xs(num_init_sam:end,2),'LineWidth',5,'Color',lineStyles(7,:));
             hold on;
             plot(bots(idx_plot).Xs(end,1),bots(idx_plot).Xs(end,2),'o','MarkerSize',20,'LineWidth',5,'Color',lineStyles(2,:))
             hold on;
@@ -352,6 +398,7 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
         
 %% plot centroid        
         plot(g_actual(1,:),g_actual(2,:), '*','MarkerSize',20,'LineWidth',5,'Color',lineStyles(9,:));
+        plot(g_new(1,:),g_new(2,:), '*','MarkerSize',10,'LineWidth',5,'Color',lineStyles(8,:));
         hold on;
 
 %% plot division edge        
@@ -379,7 +426,7 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
         end
 
 %%  Display the energy.
-        figure(21);
+        figure(2);
         subplot ( 1, 2, 1 )
         plot(step, rms_stack, 'r-s');
         title ( 'RMS Error' )
@@ -390,7 +437,7 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
         axis square
         drawnow
     
-        figure(21);
+        figure(2);
         subplot ( 1, 2, 2 )
         plot ( step, cf, 'm-' )
         title ( 'Cost Function' )
@@ -424,6 +471,13 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
         if stop_count == num_bot
             stop_flag = 1;
         end
+        
+        %% plot 
+        % look into (phi_func = est_mu + beta*est_s2)
+        plot_3Dsurf(4, reshape(est_mu,[size(ksx_g,1),size(ksx_g,2)]), [0,1]);
+        plot_3Dsurf(3, reshape(est_s2,[size(ksx_g,1),size(ksx_g,2)]), [0, 4]);
+        pause(1);
+ 
         
     end
     
