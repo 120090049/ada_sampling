@@ -491,14 +491,14 @@ end
 
 % Transmit bot n's packet to any neighbors for whom packetLost returns false
 function bots = transmitPacket(bots, n)
-num_bot = numel(bots);
-for j=1:num_bot
-    %if ~packetLost(norm(bots(n).state.p - bots(j).state.p))
-    if ismember(j, bots(n).neighbor)
-        bots(j).packets(n) = bots(n).packets(n);
+    num_bot = numel(bots);
+    for j=1:num_bot
+        %if ~packetLost(norm(bots(n).state.p - bots(j).state.p))
+        if ismember(j, bots(n).neighbor)
+            bots(j).packets(n) = bots(n).packets(n);
+        end
+        %end
     end
-    %end
-end
 end
 
 % update cycle

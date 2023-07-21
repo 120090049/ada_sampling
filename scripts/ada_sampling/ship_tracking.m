@@ -5,9 +5,19 @@
 
 % with distributed coverage control and consensus density function learning
 
+
+
 function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot_distribute(varargin)
+    %% Bots initialization
+    % import py file
+    py.importlib.import_module('controller');
+    % renew the cache for python
+    % clear classes;
+    % obj = py.importlib.import_module('controller');
+    % py.importlib.reload(obj);
+
     global num_gau num_bot Xss Fss eta
-    
+
     %% read data for map
     load('ship_trajectory.mat'); % F_map(200,100) map_length map_width targets(8*2)
     [Xss, ksx_g, ksy_g] = generate_coordinates(map_length, map_width);
@@ -16,8 +26,8 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
     Xss_T = Xss';
     
     
-    map_x = map_width;
-    map_y = map_length;
+    map_x = map_width; % 20
+    map_y = map_length; % 40
     map_z = [0,1];
     N = length(Fss);
     d = size(Xss,2); %2
@@ -51,50 +61,51 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
     
     rng(200)
     g=[];
-
+    
     plot_3Dsurf(10, reshape(Fss,[size(ksx_g,1),size(ksx_g,2)]), [0,1]);
     
     %% Add noise to Fss data==0, to fit the GMM
-        noise = normrnd(0.1, 0.05, size(Fss)); % 标准差为0.03
-        Fss_zero_indices = (Fss == 0); % 选择 Fss 中为0的元素的逻辑索引
-        Fss(Fss_zero_indices) = Fss(Fss_zero_indices) - noise(Fss_zero_indices);    
+    noise = normrnd(0.1, 0.05, size(Fss)); % 标准差为0.03
+    Fss_zero_indices = (Fss == 0); % 选择 Fss 中为0的元素的逻辑索引
+    Fss(Fss_zero_indices) = Fss(Fss_zero_indices) - noise(Fss_zero_indices);    
     
-        [label_rss, model_rss, ~] = mixGaussEm_gmm(Fss', num_gau); % centralized GMM version
+    [label_rss, model_rss, ~] = mixGaussEm_gmm(Fss', num_gau); % centralized GMM version
     
     
-        if numel(unique(label_rss))~=num_gau
-            error('reduce num_gau!');
-            return;
-        end
-
-        uniqueElements = unique(label_rss);
-        
-        % 使用 histcounts 函数统计每个唯一元素的个数
-        counts = histcounts(label_rss, [uniqueElements, max(uniqueElements)+1]);
-
-        for i = 1:num_gau
-            fprintf('Gaussian %d has：%d, Sigma=%d, mu=%d\n', i, counts(i), model_rss.Sigma(:,:,i), model_rss.mu(i) );
+    if numel(unique(label_rss))~=num_gau
+        error('reduce num_gau!');
+        return;
+    end
+    
+    uniqueElements = unique(label_rss);
+    
+    % 使用 histcounts 函数统计每个唯一元素的个数
+    counts = histcounts(label_rss, [uniqueElements, max(uniqueElements)+1]);
+    
+    for i = 1:num_gau
+        fprintf('Gaussian %d has：%d, Sigma=%d, mu=%d\n', i, counts(i), model_rss.Sigma(:,:,i), model_rss.mu(i) );
         end
         disp(model_rss);
         
-    
-    %% get initial data of the distance map (3 from each gaussian component)
-    pilot_Xs_stack = zeros(unit_sam*num_gau,2,num_bot);
-    for ikoo = 1:num_bot % get random 9 points for initialization % get 9 points from 3 gaussian
         
-        ind_ttmp = zeros(unit_sam,num_gau);
-        
-        for kik = 1:num_gau 
-            sap_tmp = find(label_rss==kik); % points of the kik th gaussian
-            ind_ttmp(:,kik) = sap_tmp(randperm(length(sap_tmp),unit_sam)); % get unit_sam=3 points from kik th gaussian
+        %% get initial data of the distance map (3 from each gaussian component)
+        pilot_Xs_stack = zeros(unit_sam*num_gau,2,num_bot);
+        for ikoo = 1:num_bot % get random 9 points for initialization % get 9 points from 3 gaussian
+            
+            ind_ttmp = zeros(unit_sam,num_gau);
+            
+            for kik = 1:num_gau 
+                sap_tmp = find(label_rss==kik); % points of the kik th gaussian
+                ind_ttmp(:,kik) = sap_tmp(randperm(length(sap_tmp),unit_sam)); % get unit_sam=3 points from kik th gaussian
+            end
+            
+            ind_ttmp = ind_ttmp(:);
+            pilot_Xs_stack(:,:,ikoo) = Xss(ind_ttmp,:);
         end
+        
+        
 
-        ind_ttmp = ind_ttmp(:);
-        pilot_Xs_stack(:,:,ikoo) = Xss(ind_ttmp,:);
-    end
 
-    
-    %% Bots initialization
     if isempty(bots)  %nargin < 1
         
         init_abg = zeros(1,num_gau);
@@ -108,7 +119,7 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
         packets = struct('alpha_K',[],'belta_K',[],'gamma_K',[]);
         
         
-        % set initial position of the bots
+        %% set initial position of the bots and initialize the ergodic controller
         for ijk = 1:num_bot % get all init points (10th is the starting point)
             bots(ijk).Xs = pilot_Xs_stack(:,:,ijk); % starting points for the robots, can be set of points from pilot survey
             
@@ -123,7 +134,14 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
             bots(ijk).Nm_ind = get_idx(bots(ijk).Xs, Xss);  % initial index for each robot (1-945)
             g(ijk,:) = bots(ijk).Xs(end,:); % in coverage control, specify generator's positions (starting positions)
             bots(ijk).Fs = Fss(bots(ijk).Nm_ind);
+
+            % initialize the controller
+            py.list([2,5])
+            py.list([start_location_x,start_location_y])
+            bots(ijk).controller = py.controller.Controller(py.list([start_location_x,start_location_y]), map_y, map_x);
         end
+
+
         % seperate into two loops since we want separate control of rng,
         % otherwise the above commands will generate same robot positions.
  
@@ -272,36 +290,13 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
         % beta = 10;
         
         
-        %% operate on s2   
-        % 目标半径
-        radius = 5;
-        bots_location = g';
-        nearby_coords = [];
-        
-        % 遍历每个给定的坐标
-        for i = 1:size(bots_location, 1)
-            % 计算当前坐标与其他坐标的欧几里得距离
-            distances = sqrt(sum((Xss - bots_location(i, :)).^2, 2));
-            
-            % 选择距离在半径范围内的坐标
-            nearby_coords = [nearby_coords; Xss(distances <= radius, :)];
-        end
-        nearby_coords = unique(nearby_coords, 'rows');
-
-        nearby_coords_index = get_idx(nearby_coords, Xss);
-        
-        % 创建一个与 est_s2 大小相同的全零数组
-        est_s2_filtered = zeros(size(est_s2));
-        
-        % 使用逻辑索引保留相应元素
-        est_s2_filtered(nearby_coords_index) = est_s2(nearby_coords_index);
-        
+      
         %% HEURISTIC FUNCTION
         beta = 20;
         phi_func = est_mu + beta*est_s2;
         
-        % phi_func = est_mu + beta*est_s2_filtered;
-
+        
+        
         % evaluate prediction perfermance
             idx_train = unique([bots.Nm_ind]); % 3 column, 1 for each bots
             idx_test = setdiff(1:length(Fss),idx_train); % all index for not trained data
@@ -443,18 +438,34 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
         
         
     % Step 7 Update the generators.
+        % pred_h_list = cell(1, num_bot);
+        % pred_Var_list = cell(1, num_bot);
+        % for i = 1:num_bot
+        %     pred_h_list{i} = zeros(length(Fss), 1);
+        %     pred_Var_list{i} = zeros(length(Fss), 1);
+        % end
         g = g+kp*(g_new-g); %g_new is the centroid   g is the next visit point 
         proj_g_idx = get_idx(g', Xss); 
         
         stop_count = 0;
         for ijk = 1:g_num
-            if bots(ijk).Nm_ind(end) ~= proj_g_idx(ijk)
-                bots(ijk).Nm_ind(end+1) = proj_g_idx(ijk); % visited position index
-                bots(ijk).Xs(end+1,:) = Xss(proj_g_idx(ijk),:);  % add new position to visited positions set
-            else
-                stop_count = stop_count + 1;  % robot does not change
+            set_points = double(bots(ijk).controller.get_nextpts(pred_h_list{ijk}));
+            set_points = round(set_points);
+            set_points = unique(set_points, 'rows'); % remove redundant coordinates
+            
+            set_points_indexs = get_idx(set_points, Xss); 
+
+            for i = 1:size(set_points_indexs, 1)
+                index = set_points_indexs(i);
+
+                if bots(ijk).Nm_ind(end) ~= index
+                    bots(ijk).Nm_ind(end+1) = index; % visited position index
+                    bots(ijk).Xs(end+1,:) = Xss(index,:);  % add new position to visited positions set
+                end
             end
+
             bots(ijk).Nm_ind = bots(ijk).Nm_ind(:)';
+
         end
        
         
@@ -562,13 +573,8 @@ function bots = updateBotComputations(bots, n)
         kss(:,:,ijj) = bots(n).Sigma_K(ijj);
     end
     bots(n).Sigma_K = kss;
-    
-    
-    
-    
+
     %% end of estimation and parameter updates
-    
-    
     bots(n).packets(n).alpha_K = bots(n).alpha_K;
     bots(n).packets(n).belta_K = bots(n).belta_K;
     bots(n).packets(n).gamma_K = bots(n).gamma_K;
