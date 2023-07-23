@@ -19,7 +19,7 @@ if __name__ == '__main__':
     if (0):
         t_dist      = TargetDist(10)
     else:
-        data = loadmat('ship_trajectory.mat')
+        data = loadmat('ship_trajectory_old_40_20.mat')
         distance_map = data['F_map']
         t_dist      = TargetDist_t(distance_map)
     
@@ -43,9 +43,9 @@ if __name__ == '__main__':
         ctrl = erg_ctrl(state)
         state = env.step(ctrl)
         log['trajectory'].append(state)
-        print(state[0], state[1])
+        print(20*state[0], 40*state[1])
         plt.scatter(state[0], state[1])
-        plt.pause(0.001)  # 暂停绘图并刷新窗口
+        plt.pause(0.01)  # 暂停绘图并刷新窗口
 
     print('--- finished simulating ---')
     xt = np.stack(log['trajectory'])
@@ -56,7 +56,7 @@ if __name__ == '__main__':
 
     plt.figure(2)
     plt.title('time averaged statistics')
-    plt.contourf(*xy, val.reshape(40,20), levels=10)
+    plt.contourf(*xy, val.reshape( data['map_length'],  data['map_width']), levels=10)
     
     # plt.figure(3)
     # plt.title('Fourier reconstruction of target distribution')

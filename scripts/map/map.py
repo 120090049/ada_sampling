@@ -24,24 +24,11 @@ class Map:
         
         if (THREED):
             self.ax = plt.axes(projection='3d')
-            self.ax.set_xlabel('X')
-            self.ax.set_ylabel('Y')
-            self.ax.set_zlabel('Z')
-
-            self.ax.set_title('Distance Map')
             
-            self.ax.set_box_aspect([1, 2, 0.5])
-            x_major_locator = MultipleLocator(1000)
-            self.ax.xaxis.set_major_locator(x_major_locator)
-            y_major_locator = MultipleLocator(1000)
-            self.ax.yaxis.set_major_locator(y_major_locator)
-            z_major_locator = MultipleLocator(0.5)
-            self.ax.zaxis.set_major_locator(z_major_locator)
         else:
             self.ax = plt.axes()
-            self.ax.set_xlabel('x')
-            self.ax.set_ylabel('y')
-            self.ax.set_title('smoothed_map')
+            mesh = self.ax.pcolormesh(self.x, self.y, self.map, cmap='viridis', vmin=0, vmax=2)
+            plt.colorbar(mesh)
 
         plt.grid(True)
         plt.ion()  # interactive mode on!!!! 很重要，有了它就不需要 plt.show() 了
@@ -51,11 +38,11 @@ class Map:
     
     def update_map(self, coordinates):
         self.coordiates = coordinates
-        self.map.fill(1)  # 重置地图为全1
+        self.map.fill(0)  # 重置地图为全1
         
         targets_on_map = []
         for coord in coordinates:
-            temp_map = np.ones((self.length, self.width))
+            temp_map = np.zeros((self.length, self.width))
             
             [ship_x_real, ship_y_real] = coord
             ship_grid_x_real, ship_grid_y_real = ship_x_real/self.grid_cell_size, ship_y_real/self.grid_cell_size
@@ -68,9 +55,11 @@ class Map:
             for x in range(grid_x_min, grid_x_max):
                 for y in range(grid_y_min, grid_y_max):
                     distance = np.sqrt((x - ship_grid_x_real)**2 + (y - ship_grid_y_real)**2)
-                    if distance < self.fov_radius:                        
-                        temp_map[x, y] = distance / self.fov_radius
-            self.map = np.multiply(self.map, temp_map)
+                    if distance < self.fov_radius:  
+                        d = 1 - distance / self.fov_radius                      
+                        # Apply the smoothstep formula
+                        temp_map[x, y] = d * d * (3 - 2 * d)
+            self.map += temp_map
             
             targets_on_map.append([coord[0]/self.grid_cell_size, coord[1]/self.grid_cell_size])
             
@@ -83,10 +72,26 @@ class Map:
 
         if (THREED):
             self.ax.plot_surface(self.x, self.y, self.map, cmap='viridis', alpha=0.8, rstride=1, cstride=1, shade=False)
+            self.ax.set_xlabel('X')
+            self.ax.set_ylabel('Y')
+            self.ax.set_zlabel('Z')
+            
+            # self.ax.set_box_aspect([1, 2, 0.5])
+            x_major_locator = MultipleLocator(500)
+            self.ax.xaxis.set_major_locator(x_major_locator)
+            y_major_locator = MultipleLocator(500)
+            self.ax.yaxis.set_major_locator(y_major_locator)
+            z_major_locator = MultipleLocator(0.5)
+            self.ax.zaxis.set_major_locator(z_major_locator)
+            
+            self.ax.set_zlim(0, 2)
+            self.ax.set_title('Distance Map')
         else:
-            # mesh = self.ax.pcolormesh(self.x, self.y, self.map, cmap='viridis')
-            # plt.colorbar(mesh)
-            self.ax.pcolormesh(self.x, self.y, self.map, cmap='viridis', shading='auto')
+            self.ax.pcolormesh(self.x, self.y, self.map, cmap='viridis', shading='auto', vmin=0, vmax=2)
+            self.ax.set_xlabel('x')
+            self.ax.set_ylabel('y')
+            self.ax.set_title('smoothed_map')
+            
 
             
         x_points = [coord[0]+10 for coord in self.coordiates[:]]
@@ -125,7 +130,7 @@ if __name__ == '__main__':
             
             if line == '':  # new time step
                 map, targets_on_map = Map_output.update_map(current_list)
-                map = 1 - map
+                # map = 1 - map
                 data_dict['F_map'] = map
                 data_dict['targets'] = targets_on_map
 
@@ -133,8 +138,8 @@ if __name__ == '__main__':
                 # print(targets_on_map)
                 Map_output.print_map()
                 current_list = []
-                # plt.pause(50)
-                # break
+                plt.pause(5)
+                break
             else:  # 解析列表的行数据
                 sublist = [float(item) for item in line.split()]
                 current_list.append(sublist)

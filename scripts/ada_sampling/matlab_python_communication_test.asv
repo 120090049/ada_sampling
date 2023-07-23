@@ -18,7 +18,7 @@ py.importlib.reload(obj);
 contoller_bot1 = py.controller.Controller(py.list([2,5]), 40, 20);
 
 % test data
-load('ship_trajectory_old_40_20.mat'); % F_map(40,20) map_length map_width targets(8*2)
+load('ship_trajectory_old.mat'); % F_map(40,20) map_length map_width targets(8*2)
 [Xss, ksx_g, ksy_g] = generate_coordinates(map_length, map_width);
 Fss = F_map(:);
 map_x = map_width; % 20
@@ -27,19 +27,15 @@ map_z = [0,1];
 
 % run ergodic search algorithm
 for i = 1:200
-    reshape_list = reshape(Fss, [size(ksx_g,1),size(ksx_g,2)])';
-    Fss_for_py = reshape_list(:);
-    % pred_h_list_forpy{i}(index_label==i) = reshape_list(:);
-
-    set_points = double(contoller_bot1.get_nextpts(Fss_for_py));
+    set_points = double(contoller_bot1.get_nextpts(Fss));
     % plot_3Dsurf(1, reshape(Fss,[size(ksx_g,1),size(ksx_g,2)]), [0,1]);
     lineStyles = linspecer(10);
 
     plot_surf2( ksx_g,ksy_g,reshape(Fss,[size(ksx_g,1),size(ksx_g,2)]), map_x, map_y, map_z,25, 5);
     hold on;
-    for i = 1:size(set_points,1)
-        plot(set_points(i,1), set_points(i,2),'o','MarkerSize',5,'LineWidth',5,'Color',lineStyles(2,:));
-    end
+    plot(20, 10,'o','MarkerSize',5,'LineWidth',5,'Color',lineStyles(2,:));
+    disp(set_points(2,1), set_points(2,2));
+    plot(set_points(2,1), set_points(2,2),'o','MarkerSize',5,'LineWidth',5,'Color',lineStyles(2,:));
     pause(0.1);
 end
 

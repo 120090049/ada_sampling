@@ -28,12 +28,19 @@ class Controller(object): # python (x,y) therefore col index first, row next
         self.erg_ctrl    = RTErgodicControl(self.model, horizon=15, num_basis=5, batch_size=-1)
 
         print("Controller Succcessfully Initialized! Initial position is: ", start_position)
-
-        
+    
     def get_nextpts(self, phi_vals): 
-        sample_steps = 2
+        plt.figure(1)
+        plt.title('ergodic coverage')
+        self.ax = plt.axes()
+     
+    def get_nextpts(self, phi_vals): 
+        sample_steps = 10
         setpoints = []
         # setpoints = np.zeros((sample_steps, 2))
+        # change phi_vals(column vector) from matlab orginization to python orginization 
+        
+        
         # setting the phik on the ergodic controller
         phi_vals = np.array(phi_vals)
         phi_vals /= np.sum(phi_vals)
@@ -48,7 +55,9 @@ class Controller(object): # python (x,y) therefore col index first, row next
             # pre_cord = cord  
                   
             setpoints.append([self.robot_state[0]*self.col, self.robot_state[1]*self.row ])
-            
+            # plt.scatter(self.robot_state[0], self.robot_state[1])
+            # plt.pause(0.001)  # 暂停绘图并刷新窗口
+        
         setpoints = np.array(setpoints)
         return setpoints
         

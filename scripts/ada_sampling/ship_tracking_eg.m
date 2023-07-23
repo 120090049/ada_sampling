@@ -265,17 +265,11 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
         %% step 4 + 5 + 6-1 
         pred_h_list = cell(1, num_bot);
         pred_Var_list = cell(1, num_bot);
-        pred_h_list_forpy = cell(1, num_bot);
-        pred_Var_list_forpy  = cell(1, num_bot);
         for i = 1:num_bot
-            % h and Var list for each Voronoi cell
             pred_h_list{i} = zeros(length(Fss), 1);
             pred_Var_list{i} = zeros(length(Fss), 1);
-            pred_h_list_forpy{i} = zeros(length(Fss), 1);
-            pred_Var_list_forpy{i}  = zeros(length(Fss), 1);
         end
 
-        % overall h and Var
         pred_h = zeros(length(Fss),1);
         pred_Var = zeros(length(Fss),1);
         
@@ -286,18 +280,8 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
             % [pred_h(index_label==iij), pred_Var(index_label==iij), ~] = gmm_pred_wafr(Xss(index_label==iij,:), Fss(index_label==iij), bots(iij), 'hyp2_new', hyp2_new);
             pred_h_list{i}(index_label==i) = h;
             pred_Var_list{i}(index_label==i) = Var;
-            
-            reshape_list = reshape(pred_h_list{i}, [size(ksx_g,1),size(ksx_g,2)])';
-            pred_h_list_forpy{i} = reshape_list(:);
-
-            reshape_list = reshape(pred_Var_list{i}, [size(ksx_g,1),size(ksx_g,2)])';
-            pred_Var_list_forpy{i} = reshape_list(:);
-            
         end
-        figure(100);
         
-        plot_surf2( ksx_g,ksy_g,reshape(pred_h_list{2},[size(ksx_g,1),size(ksx_g,2)]), map_x, map_y, map_z,25, 5);
-
         %% 6-2 evaluate h(q)
         est_mu = pred_h;
         est_mu(est_mu > 1) = 1;
@@ -324,7 +308,59 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
         
         %% Step 7 Compute local adaptive converge control law
         
-              
+        
+        %% calcuate the centroid of UCB function
+        g_new = g;
+
+        m = zeros(g_num,1);
+        phi_func_for_centroid = phi_func;
+        phi_func_for_centroid(phi_func_for_centroid < 0) = 0;
+        
+        accumM = accumarray (index_label, phi_func);  
+        m(1:length(accumM)) = accumM;  
+        
+        sumx = zeros(g_num,1);
+        sumy = zeros(g_num,1);
+        accumX = accumarray ( index_label, Xss_T(1,:)'.*phi_func_for_centroid );     %   \sigma_{V_i} \q_x \phi(q) \dq   ucb
+        accumY = accumarray ( index_label, Xss_T(2,:)'.*phi_func_for_centroid );   %  \sigma_{V_i} \q_y \phi(q) \dq     ucb
+        sumx(1:length(accumX)) = accumX;
+        sumy(1:length(accumY)) = accumY;  
+
+        % new centroid of phi_func (h(q) in the paper)
+        g_new(1,m~=0) = sumx(m~=0) ./ m(m~=0);   % get x coordinate for the new centroid
+        g_new(2,m~=0) = sumy(m~=0) ./ m(m~=0);   % get y coordinate for the new centroid
+        
+        
+        %% calculate real centroid 
+        g_actual = g;
+        m = zeros(g_num,1);
+
+        %% plot partitation  
+        % matrix = reshape(index_label, 200, 100)';
+        % colormap('jet');  % 选择一个颜色映射，这里使用 'jet'，你可以根据需要选择其他的颜色映射
+        % imagesc(matrix);
+        % colorbar;  % 添加颜色条，用于解释图像中的颜色对应数值
+        % 
+    
+        accumM = accumarray (index_label, Fss_for_centroid);   % this computes \sigma_{V_i} \phi(q) \dq for all voronoi cell V_i  % ones(s_num,1)
+        m(1:length(accumM)) = accumM;  % \sigma_{V_i} \phi(q) \dq for each V   (g_num x 1)
+        
+        accumX = accumarray ( index_label, Xss_T(1,:)'.*Fss_for_centroid );     %   \sigma_{V_i} \q_x \phi(q) \dq   actual density function
+        accumY = accumarray ( index_label, Xss_T(2,:)'.*Fss_for_centroid );   %  \sigma_{V_i} \q_y \phi(q) \dq     actual density function
+        sumx(1:length(accumX)) = accumX;
+        sumy(1:length(accumY)) = accumY;
+        g_actual(1,m>0) = sumx(m~=0) ./ m(m~=0);   % get x coordinate for the actual centroid
+        g_actual(2,m>0) = sumy(m~=0) ./ m(m~=0);   % get y coordinate for the actual centroid
+        
+        %% Done get centroid coordinate
+        proj_g_idx = get_idx(g_new', Xss);    % get idx of the inferred centroid
+        proj_g_idx_actual = get_idx(g_actual', Xss);  % get idx of the actual centroid
+
+        g_new = Xss(proj_g_idx,:)';     % get projected inferred centroid
+        g_actual = Xss(proj_g_idx_actual,:)';    % get projected acutal centroid
+            
+    
+        
         figure(1);
 %% plot mu       
         plot_surf2( ksx_g,ksy_g,reshape(est_mu,[size(ksx_g,1),size(ksx_g,2)]), map_x, map_y, map_z,25, 5);
@@ -333,17 +369,22 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
         lineStyles = linspecer(10);
         colormap(linspecer);
         hold on;
-        [edge_x, edge_y] = voronoi(temp_g(1,:),temp_g(2,:),t); %'r--'
+        [edge_x, edge_y] = voronoi(g(1,:),g(2,:),t); %'r--'
         hold on;
  
 %% plot trajectory       
-        for idx_plot = 1:g_num % bots trajectory print  
+        for idx_plot = 1:g_num % bots trajectory print
+            
             plot(bots(idx_plot).Xs(num_init_sam:end,1),bots(idx_plot).Xs(num_init_sam:end,2),'LineWidth',5,'Color',lineStyles(7,:));
             hold on;
             plot(bots(idx_plot).Xs(end,1),bots(idx_plot).Xs(end,2),'o','MarkerSize',20,'LineWidth',5,'Color',lineStyles(2,:))
             hold on;
         end
         
+%% plot centroid        
+        plot(g_actual(1,:),g_actual(2,:), '*','MarkerSize',20,'LineWidth',5,'Color',lineStyles(9,:));
+        plot(g_new(1,:),g_new(2,:), '*','MarkerSize',10,'LineWidth',5,'Color',lineStyles(8,:));
+        hold on;
 
 %% plot division edge        
         plot(edge_x,edge_y,'--','Color',lineStyles(9,:),'LineWidth',5);
@@ -370,30 +411,30 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
         end
 
 %%  Display the energy.
-        % figure(2);
-        % subplot ( 1, 2, 1 )
-        % plot(step, rms_stack, 'r-s');
-        % title ( 'RMS Error' )
-        % xlabel ( 'Step' )
-        % grid on
-        % axis equal
-        % xlim([0 45]);
-        % axis square
-        % drawnow
+        figure(2);
+        subplot ( 1, 2, 1 )
+        plot(step, rms_stack, 'r-s');
+        title ( 'RMS Error' )
+        xlabel ( 'Step' )
+        grid on
+        axis equal
+        xlim([0 45]);
+        axis square
+        drawnow
     
-        % figure(2);
-        % subplot ( 1, 2, 2 )
-        % plot ( step, cf, 'm-' )
-        % title ( 'Cost Function' )
-        % xlabel ( 'Step' )
-        % ylabel ( 'Energy' )
-        % grid on;
-        % axis equal
-        % xlim([0 35]);
-        % axis square
-        % drawnow
+        figure(2);
+        subplot ( 1, 2, 2 )
+        plot ( step, cf, 'm-' )
+        title ( 'Cost Function' )
+        xlabel ( 'Step' )
+        ylabel ( 'Energy' )
+        grid on;
+        axis equal
+        xlim([0 35]);
+        axis square
+        drawnow
         
-        pause(0.5);
+        pause(1);
         
         
     % Step 7 Update the generators.
@@ -403,17 +444,15 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
         %     pred_h_list{i} = zeros(length(Fss), 1);
         %     pred_Var_list{i} = zeros(length(Fss), 1);
         % end
-        
-        % g = g+kp*(g_new-g); %g_new is the centroid   g is the next visit point 
-        % proj_g_idx = get_idx(g', Xss); 
+        g = g+kp*(g_new-g); %g_new is the centroid   g is the next visit point 
+        proj_g_idx = get_idx(g', Xss); 
         
         stop_count = 0;
         for ijk = 1:g_num
-            set_points = double(bots(ijk).controller.get_nextpts(pred_h_list_forpy{ijk}));
+            set_points = double(bots(ijk).controller.get_nextpts(pred_h_list{ijk}));
             set_points = round(set_points);
             set_points = unique(set_points, 'rows'); % remove redundant coordinates
-            % update robot position
-            g(:,ijk) = set_points(end, :);
+            
             set_points_indexs = get_idx(set_points, Xss); 
 
             for i = 1:size(set_points_indexs, 1)
@@ -428,7 +467,7 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
             bots(ijk).Nm_ind = bots(ijk).Nm_ind(:)';
 
         end
-        
+       
         
         if stop_count == num_bot
             stop_flag = 1;
