@@ -14,23 +14,24 @@ clear classes;
 obj = py.importlib.import_module('controller');
 py.importlib.reload(obj);
 
-% initialize the class
-contoller_bot1 = py.controller.Controller(py.list([2,5]), 40, 20);
+
 
 % test data
-load('ship_trajectory_old_40_20.mat'); % F_map(40,20) map_length map_width targets(8*2)
+% load('ship_trajectory_old_40_20.mat');
+load('ship_trajectory.mat'); % F_map(40,20) map_length map_width targets(8*2)
 [Xss, ksx_g, ksy_g] = generate_coordinates(map_length, map_width);
 Fss = F_map(:);
 map_x = map_width; % 20
 map_y = map_length; % 40
 map_z = [0,1];
 
+% initialize the class
+contoller_bot1 = py.controller.Controller(py.list([2,5]), map_length, map_width);
+
 % run ergodic search algorithm
 for i = 1:200
     reshape_list = reshape(Fss, [size(ksx_g,1),size(ksx_g,2)])';
     Fss_for_py = reshape_list(:);
-    % pred_h_list_forpy{i}(index_label==i) = reshape_list(:);
-
     set_points = double(contoller_bot1.get_nextpts(Fss_for_py));
     % plot_3Dsurf(1, reshape(Fss,[size(ksx_g,1),size(ksx_g,2)]), [0,1]);
     lineStyles = linspecer(10);

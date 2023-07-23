@@ -37,13 +37,11 @@ class Controller(object): # python (x,y) therefore col index first, row next
     def get_nextpts(self, phi_vals): 
         sample_steps = 10
         setpoints = []
-        # setpoints = np.zeros((sample_steps, 2))
-        # change phi_vals(column vector) from matlab orginization to python orginization 
-        
         
         # setting the phik on the ergodic controller
         phi_vals = np.array(phi_vals)
         phi_vals /= np.sum(phi_vals)
+
         self.erg_ctrl.phik = convert_phi2phik(self.erg_ctrl.basis, phi_vals, self.grid)
         # pre_cord = None
         for i in range(sample_steps):

@@ -19,7 +19,7 @@ if __name__ == '__main__':
     if (0):
         t_dist      = TargetDist(10)
     else:
-        data = loadmat('ship_trajectory_old_40_20.mat')
+        data = loadmat('./ship_trajectory.mat')
         distance_map = data['F_map']
         t_dist      = TargetDist_t(distance_map)
     
@@ -31,7 +31,7 @@ if __name__ == '__main__':
 
     print('--- simulating ergodic coverage ---')
     log = {'trajectory' : []}
-    tf = 200
+    tf = 200                                                                                                                                                                                            
     state = env.reset()
 
     plt.figure(1)
@@ -56,7 +56,7 @@ if __name__ == '__main__':
 
     plt.figure(2)
     plt.title('time averaged statistics')
-    plt.contourf(*xy, val.reshape( data['map_length'],  data['map_width']), levels=10)
+    plt.contourf(*xy, val.reshape(  data['map_length'][0][0],  data['map_width'][0][0] ), levels=10)
     
     # plt.figure(3)
     # plt.title('Fourier reconstruction of target distribution')
