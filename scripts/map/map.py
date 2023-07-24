@@ -27,7 +27,7 @@ class Map:
             
         else:
             self.ax = plt.axes()
-            mesh = self.ax.pcolormesh(self.x, self.y, self.map, cmap='viridis', vmin=0, vmax=2)
+            mesh = self.ax.pcolormesh(self.x, self.y, self.map, cmap='viridis', vmin=0, vmax=1)
             plt.colorbar(mesh)
 
         plt.grid(True)
@@ -38,11 +38,12 @@ class Map:
     
     def update_map(self, coordinates):
         self.coordiates = coordinates
-        self.map.fill(0)  # 重置地图为全1
+        self.map.fill(0)  # 重置地图为全0
         
         targets_on_map = []
-        for coord in coordinates:
-            temp_map = np.zeros((self.length, self.width))
+        distance_map = np.ones((self.length, self.width)) # distance map
+        for coord in coordinates:            
+            temp_map = np.ones((self.length, self.width)) 
             
             [ship_x_real, ship_y_real] = coord
             ship_grid_x_real, ship_grid_y_real = ship_x_real/self.grid_cell_size, ship_y_real/self.grid_cell_size
@@ -56,13 +57,15 @@ class Map:
                 for y in range(grid_y_min, grid_y_max):
                     distance = np.sqrt((x - ship_grid_x_real)**2 + (y - ship_grid_y_real)**2)
                     if distance < self.fov_radius:  
-                        d = 1 - distance / self.fov_radius                      
+                        temp_map[x, y] = distance / self.fov_radius 
+            distance_map *= temp_map
                         # Apply the smoothstep formula
-                        temp_map[x, y] = d * d * (3 - 2 * d)
-            self.map += temp_map
             
             targets_on_map.append([coord[0]/self.grid_cell_size, coord[1]/self.grid_cell_size])
-            
+        
+        d = 1-distance_map
+        self.map = d * d * (3 - 2 * d)
+        # self.map =  distance_map  
         return self.map, targets_on_map
 
     def print_map(self):
@@ -87,15 +90,15 @@ class Map:
             self.ax.set_zlim(0, 2)
             self.ax.set_title('Distance Map')
         else:
-            self.ax.pcolormesh(self.x, self.y, self.map, cmap='viridis', shading='auto', vmin=0, vmax=2)
+            self.ax.pcolormesh(self.x, self.y, self.map, cmap='viridis', shading='auto', vmin=0, vmax=1)
             self.ax.set_xlabel('x')
             self.ax.set_ylabel('y')
             self.ax.set_title('smoothed_map')
             
 
             
-        x_points = [coord[0]+10 for coord in self.coordiates[:]]
-        y_points = [coord[1]+10 for coord in self.coordiates[:]]
+        x_points = [coord[0]+100 for coord in self.coordiates[:]]
+        y_points = [coord[1]+40 for coord in self.coordiates[:]]
         z_points = np.zeros_like(x_points)
         if (THREED):
             self.ax.scatter(y_points, x_points, z_points, color='red', s=10)
@@ -118,13 +121,14 @@ if __name__ == '__main__':
         else:
             WRITE = False
     current_list = []
-    Map_output = Map(length=4000, width=2000, grid_cell_size=20, fov_radius=300)
+    Map_output = Map(length=4000, width=2000, grid_cell_size=100, fov_radius=400)
     data_dict = {'map_length': Map_output.length, 'map_width': Map_output.width}
     
     
     with open('ship_trajectory.txt', 'r') as file:
         lines = file.readlines()
         
+        frame_num = 1
         for line in lines:
             line = line.strip()
             
@@ -138,12 +142,16 @@ if __name__ == '__main__':
                 # print(targets_on_map)
                 Map_output.print_map()
                 current_list = []
-                plt.pause(5)
-                break
+                
+                if WRITE:     
+                    file_name = './trajectory/ship_trajectory_{}.mat'.format(frame_num)
+                    sio.savemat(file_name, data_dict, appendmat=False)
+                    print("Successfully saved " + file_name)
+                    
+                frame_num += 1
+                plt.pause(0.1)
+                # break
             else:  # 解析列表的行数据
                 sublist = [float(item) for item in line.split()]
                 current_list.append(sublist)
                 
-    if WRITE:     
-        sio.savemat('ship_trajectory.mat', data_dict, appendmat=False)
-        print("Successfully saved")

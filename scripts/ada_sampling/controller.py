@@ -35,7 +35,7 @@ class Controller(object): # python (x,y) therefore col index first, row next
         self.ax = plt.axes()
      
     def get_nextpts(self, phi_vals): 
-        sample_steps = 10
+        sample_steps = 3
         setpoints = []
         
         # setting the phik on the ergodic controller

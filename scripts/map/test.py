@@ -1,12 +1,8 @@
-import numpy as np
+data_dict = {'map_length': 1, 'map_width': 2}
+    
 
-# 创建两个矩阵
-matrix1 = np.array([[1, 2], [3, 4]])
-matrix2 = np.array([[5, 6], [7, 8]])
+data_dict['F_map'] = 10
+print(data_dict)
 
-# 进行矩阵对应位置的元素相乘
-result = np.multiply(matrix1, matrix2)
-
-print("矩阵对应位置的元素相乘的结果：")
-print(result)
-print(matrix1)
+data_dict['F_map'] = 12
+print(data_dict)

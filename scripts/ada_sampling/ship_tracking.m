@@ -19,7 +19,8 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
     global num_gau num_bot Xss Fss eta
 
     %% read data for map
-    load('ship_trajectory_old.mat'); % F_map(200,100) map_length map_width targets(8*2)
+    load('ship_trajectory_old_40_20.mat'); % F_map(200,100) map_length map_width targets(8*2)
+    % load('ship_trajectory_old_40_20.mat'); % F_map(200,100) map_length map_width targets(8*2)
     [Xss, ksx_g, ksy_g] = generate_coordinates(map_length, map_width);
     Fss = F_map(:);
     Fss_for_centroid = Fss;
@@ -62,10 +63,10 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
     rng(200)
     g=[];
     
-    plot_3Dsurf(10, reshape(Fss,[size(ksx_g,1),size(ksx_g,2)]), [0,1]);
+    % plot_3Dsurf(10, reshape(Fss,[size(ksx_g,1),size(ksx_g,2)]), [0,1]);
     
     %% Add noise to Fss data==0, to fit the GMM
-    noise = normrnd(0.1, 0.05, size(Fss)); % 标准差为0.03
+    noise = normrnd(0.1, 0.03, size(Fss)); % 标准差为0.03
     Fss_zero_indices = (Fss == 0); % 选择 Fss 中为0的元素的逻辑索引
     Fss(Fss_zero_indices) = Fss(Fss_zero_indices) - noise(Fss_zero_indices);    
     
@@ -104,7 +105,6 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
         end
         
         
-
 
     if isempty(bots)  %nargin < 1
         
@@ -213,7 +213,7 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
         bots = transmitPacket(bots, ijk); % update communication packets
     end
     
-    
+    update_cell_every_n_iteration = 1;
     for it = 1 : it_num
         it    % coverage control iteration step
         loop_flag = true;
@@ -259,8 +259,9 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
                 temp_g(1, 2) = temp_g(1, 2) + 1;
             end
         end
-        index_label = powercellidx (g(1,:),g(2,:),Xss_T(1,:),Xss_T(2,:)); % for each point, label it by nearest neighbor (there are 945 1/2/3 labels)  
-        
+        if mod(it, update_cell_every_n_iteration) == 1 || update_cell_every_n_iteration == 1
+            index_label = powercellidx (g(1,:),g(2,:),Xss_T(1,:),Xss_T(2,:)); % for each point, label it by nearest neighbor (there are 945 1/2/3 labels)  
+        end
 
         %% step 4 + 5 + 6-1 
         pred_h_list = cell(1, num_bot);
@@ -294,10 +295,11 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
             pred_Var_list_forpy{i} = reshape_list(:);
             
         end
-        figure(100);
-        
-        plot_surf2( ksx_g,ksy_g,reshape(pred_h_list{2},[size(ksx_g,1),size(ksx_g,2)]), map_x, map_y, map_z,25, 5);
 
+        % figure(100);        
+        % plot_surf2( ksx_g,ksy_g,reshape(pred_h_list{1},[size(ksx_g,1),size(ksx_g,2)]), map_x, map_y, map_z,25, 5);
+        % plot_surf2( ksx_g,ksy_g,reshape(pred_h_list{1},[size(ksx_g,1),size(ksx_g,2)]), map_x, map_y, map_z,25, 5);
+        % plot_surf2( ksx_g,ksy_g,reshape(pred_h_list{1},[size(ksx_g,1),size(ksx_g,2)]), map_x, map_y, map_z,25, 5);
         %% 6-2 evaluate h(q)
         est_mu = pred_h;
         est_mu(est_mu > 1) = 1;
@@ -345,29 +347,37 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
         end
         
 
-%% plot division edge        
-        plot(edge_x,edge_y,'--','Color',lineStyles(9,:),'LineWidth',5);
+%% plot division edge  
+        if mod(it, update_cell_every_n_iteration) == 1 || update_cell_every_n_iteration == 1
+            edge_x_temp = edge_x;
+            edge_y_temp = edge_y;
+            g_temp = g;
+        end
+        plot(edge_x_temp,edge_y_temp,'--','Color',lineStyles(9,:),'LineWidth',5);
         hold on;
-        
-        text(g(1,:)'+2,g(2,:)',int2str((1:g_num)'),'FontSize',25);
-
+        text(g_temp(1,:)'+2,g_temp(2,:)',int2str((1:g_num)'),'FontSize',25);
         axis ([  0, map_x, 0, map_y ])
         drawnow
         xlabel('X','FontSize',25);
         ylabel('Y','FontSize',25);
-
         set(gca,'LineWidth',5,'fontsize',25,'fontname','Times','FontWeight','Normal');
-        
         hold off;
-        
-        if ismember(it,[1 11])
-            pause(0.1)
-        end
+        % plot(edge_x,edge_y,'--','Color',lineStyles(9,:),'LineWidth',5);
+        % hold on;
+        % text(g(1,:)'+2,g(2,:)',int2str((1:g_num)'),'FontSize',25);
+        % axis ([  0, map_x, 0, map_y ])
+        % drawnow
+        % xlabel('X','FontSize',25);
+        % ylabel('Y','FontSize',25);
+        % set(gca,'LineWidth',5,'fontsize',25,'fontname','Times','FontWeight','Normal');
+        % hold off;
+     
         
         cf(it) = 0;
         for i = 1:s_num
             cf(it) = cf(it)+((Xss_T(1,i)-g(1,index_label(i))).*Fss(i))^2+((Xss_T(2,i)-g(2,index_label(i))).*Fss(i)) ^2;  % get summation of distance to goal
         end
+        pause(1);
 
 %%  Display the energy.
         % figure(2);
@@ -393,7 +403,6 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
         % axis square
         % drawnow
         
-        pause(0.5);
         
         
     % Step 7 Update the generators.
@@ -409,16 +418,16 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
         
         stop_count = 0;
         for ijk = 1:g_num
-            set_points = double(bots(ijk).controller.get_nextpts(pred_h_list_forpy{ijk}));
+            infomation_map = pred_h_list_forpy{ijk} + 0.2* pred_h_list_forpy{ijk};
+            set_points = double(bots(ijk).controller.get_nextpts(infomation_map));
             set_points = round(set_points);
-            set_points = unique(set_points, 'rows'); % remove redundant coordinates
+            set_points = unique(set_points, 'rows','stable'); % remove redundant coordinates
             % update robot position
             g(:,ijk) = set_points(end, :);
             set_points_indexs = get_idx(set_points, Xss); 
 
             for i = 1:size(set_points_indexs, 1)
                 index = set_points_indexs(i);
-
                 if bots(ijk).Nm_ind(end) ~= index
                     bots(ijk).Nm_ind(end+1) = index; % visited position index
                     bots(ijk).Xs(end+1,:) = Xss(index,:);  % add new position to visited positions set
@@ -438,7 +447,7 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
         % look into (phi_func = est_mu + beta*est_s2)
         plot_3Dsurf(4, reshape(est_mu,[size(ksx_g,1),size(ksx_g,2)]), [0,1]);
         plot_3Dsurf(3, reshape(est_s2,[size(ksx_g,1),size(ksx_g,2)]), [0, 4]);
-        pause(1);
+        
  
         
     end
@@ -527,9 +536,9 @@ function bots = updateBotComputations(bots, n)
     kss = zeros(1,1,num_gau);
     for ijj = 1:num_gau
         
-        %if bots(n).Sigma_K(ijj)<10^-5
-        %    pause;
-        %end
+        if bots(n).Sigma_K(ijj)<10^-5
+           pause;
+        end
         
         kss(:,:,ijj) = bots(n).Sigma_K(ijj);
     end

@@ -19,7 +19,7 @@ if __name__ == '__main__':
     if (0):
         t_dist      = TargetDist(10)
     else:
-        data = loadmat('ship_trajectory_old_40_20.mat')
+        data = loadmat('/home/clp/catkin_ws/src/ada_sampling/scripts/ada_sampling/ship_trajectory_old_40_20.mat')
         distance_map = data['F_map']
         t_dist      = TargetDist_t(distance_map)
     
@@ -38,12 +38,14 @@ if __name__ == '__main__':
     xy, vals = t_dist.get_grid_spec()
     plt.title('ergodic coverage')
     plt.contourf(*xy, vals, levels=10)
-    plt.pause(1)
+    
+    Erg_list = []
     for t in range(tf):
         ctrl = erg_ctrl(state)
+        Erg_list.append(erg_ctrl.Erg_metric)
         state = env.step(ctrl)
         log['trajectory'].append(state)
-        print(20*state[0], 40*state[1])
+        # print(20*state[0], 40*state[1])
         plt.scatter(state[0], state[1])
         plt.pause(0.01)  # 暂停绘图并刷新窗口
 
@@ -58,7 +60,15 @@ if __name__ == '__main__':
     plt.title('time averaged statistics')
     plt.contourf(*xy, val.reshape(  data['map_length'][0][0],  data['map_width'][0][0] ), levels=10)
     
-    # plt.figure(3)
+    plt.figure(3)
+    x = range(len(Erg_list))
+
+    plt.plot(x, Erg_list, marker='o', linestyle='-', color='b')
+
+    plt.title('Erg_metric')
+    plt.xlabel('time')
+    plt.ylabel('metric value')
+
     # plt.title('Fourier reconstruction of target distribution')
     # phi = convert_phik2phi(erg_ctrl.basis, erg_ctrl.phik, t_dist.grid)
     # plt.contourf(*xy, phi.reshape(40,20), levels=10)

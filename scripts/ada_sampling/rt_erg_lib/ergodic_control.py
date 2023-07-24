@@ -29,7 +29,8 @@ class RTErgodicControl(object):
         self.Rinv = np.linalg.inv(weights['R'])
 
         self._phik = None
-
+        self.Erg_metric = 0
+        
     def reset(self):
         self.u_seq = [0.0*self.model.action_space.sample()
                 for _ in range(self.horizon)]
@@ -83,11 +84,13 @@ class RTErgodicControl(object):
         fourier_diff = self.lamk * (ck - self.phik) # equation (4)
         fourier_diff = fourier_diff.reshape(-1,1)
 
+        
+        self.Erg_metric = np.sum(self.lamk * np.square(ck - self.phik))
         # backwards pass
         rho = np.zeros(self.model.observation_space.shape)
         for t in reversed(range(self.horizon)):
             edx = np.zeros(self.model.observation_space.shape)
-            edx[self.model.explr_idx] = np.sum(dfk[t] * fourier_diff, 0)
+            edx[self.model.explr_idx] = np.sum(dfk[t] * fourier_diff, 0) # equ 6 
 
             bdx = np.zeros(self.model.observation_space.shape)
             bdx[self.model.explr_idx] = dbar[t]
