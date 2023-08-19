@@ -33,7 +33,7 @@ for i = 1:200
     reshape_list = reshape(Fss, [size(ksx_g,1),size(ksx_g,2)])';
     Fss_for_py = reshape_list(:);
     set_points = double(contoller_bot1.get_nextpts(Fss_for_py));
-    set_points
+    % set_points
     % plot_3Dsurf(1, reshape(Fss,[size(ksx_g,1),size(ksx_g,2)]), [0,1]);
     lineStyles = linspecer(10);
 

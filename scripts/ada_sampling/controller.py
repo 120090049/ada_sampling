@@ -1,3 +1,5 @@
+import sys
+sys.path.append('./rt_erg_lib/')
 from double_integrator import DoubleIntegrator
 from ergodic_control import RTErgodicControl
 from target_dist import TargetDist
@@ -27,12 +29,11 @@ class Controller(object): # python (x,y) therefore col index first, row next
         
         self.erg_ctrl    = RTErgodicControl(self.model, horizon=15, num_basis=5, batch_size=-1)
 
+        self.pre_state = None
+        
         print("Controller Succcessfully Initialized! Initial position is: ", start_position)
     
-    def get_nextpts(self, phi_vals): 
-        plt.figure(1)
-        plt.title('ergodic coverage')
-        self.ax = plt.axes()
+   
      
     def get_nextpts(self, phi_vals): 
         sample_steps = 3
@@ -43,16 +44,25 @@ class Controller(object): # python (x,y) therefore col index first, row next
         phi_vals /= np.sum(phi_vals)
 
         self.erg_ctrl.phik = convert_phi2phik(self.erg_ctrl.basis, phi_vals, self.grid)
-        # pre_cord = None
-        for i in range(sample_steps):
+
+        i = 0
+        while (i < sample_steps):
+            i += 1
             ctrl = self.erg_ctrl(self.robot_state)
             self.robot_state = self.robot_dynamic.step(ctrl)
+
+            temp_state = [ int(self.robot_state[0]*self.col), int(self.robot_state[1]*self.row) ]
+            if (self.pre_state != None) and (self.pre_state == temp_state):
+                sample_steps += 1
+                self.pre_state = temp_state
+                continue
+            self.pre_state = temp_state
             # cord = [round(self.robot_state[0]*self.col), round(self.robot_state[1]*self.row)]
             # if pre_cord != cord:  
             #     setpoints.append([round(self.robot_state[0]*self.col), round(self.robot_state[1]*self.row) ])
             # pre_cord = cord  
                   
-            setpoints.append([self.robot_state[0]*self.col, self.robot_state[1]*self.row ])
+            setpoints.append(temp_state)
             # plt.scatter(self.robot_state[0], self.robot_state[1])
             # plt.pause(0.001)  # 暂停绘图并刷新窗口
         

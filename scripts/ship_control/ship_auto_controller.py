@@ -69,7 +69,7 @@ if __name__ == '__main__':
     
     wind=[0,2]
     wave=[2,0]
-    frequency = 0.05
+    frequency = 0.5
     randomness= 0.02
     
     shipT_num = 4

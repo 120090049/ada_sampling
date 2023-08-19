@@ -23,7 +23,7 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
     % load('ship_trajectory_old_40_20.mat'); % F_map(200,100) map_length map_width targets(8*2)
     [Xss, ksx_g, ksy_g] = generate_coordinates(map_length, map_width);
     Fss = F_map(:);
-    Fss_for_centroid = Fss;
+    Fss_org = Fss;
     Xss_T = Xss';
     
     
@@ -51,13 +51,11 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
     bots = [];
     
     kp = 0.5; % move towards centroid
-    it_num = 40;
-    save_flag = false;
+    it_num = 15;
     
     unit_sam = 4;  % draw some samples from each distribution
     num_init_sam = unit_sam*num_gau + 1;%10; % initial number of samples for each robot
     
-    stop_flag = 0;
     
     
     rng(200)
@@ -205,6 +203,9 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
     rms_stack = nan(it_num, 1);
     var_stack = nan(it_num, 1);
     
+    culmulative_info_gain = 0;
+    info_gain_stack = nan(it_num, 1);
+    culmulative_info_gain_stack = nan(it_num, 1);
     %%  initialize for consensus loop
     max_iter = 1000; % consensus communication round
     
@@ -213,7 +214,7 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
         bots = transmitPacket(bots, ijk); % update communication packets
     end
     
-    
+    update_cell_every_n_iteration = 5;
     for it = 1 : it_num
         it    % coverage control iteration step
         loop_flag = true;
@@ -224,29 +225,24 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
         
         %% begin consensus process to refine local model for each robot
         %% step 2,3
-        if ~stop_flag
-            while loop_flag  % for first round, use neighbors defined by default from the part of initialization above
-                for ijk = 1:num_bot
-                    %             bots(ijk).neighbor = find(adj_A(ijk,:)>0);   % confirm neighbors
-                    bots = transmitPacket(bots, ijk); % update communication packets
-                    bots = updateBotComputations(bots, ijk);  % then update self and consensus
-                end
-             
-                cur_iter = cur_iter+1;
-                if cur_iter > max_iter % transimit 1000 times
-                    break;
-                end
-           
-            end   
-        end % end of consensus part
+        while loop_flag  % for first round, use neighbors defined by default from the part of initialization above
+            for ijk = 1:num_bot
+                %             bots(ijk).neighbor = find(adj_A(ijk,:)>0);   % confirm neighbors
+                bots = transmitPacket(bots, ijk); % update communication packets
+                bots = updateBotComputations(bots, ijk);  % then update self and consensus
+            end
+            
+            cur_iter = cur_iter+1;
+            if cur_iter > max_iter % transimit 1000 times
+                break;
+            end
+        
+        end   
+        % end of consensus part
         
    
         %% step 1 recompute the Voronoi region
-        %Compute the Delaunay triangle information T for the current nodes.
-        %  For each sample point, find K, the index of the nearest generator.
-        %  We do this efficiently by using the Delaunay information with
-        %  Matlab's DSEARCHccss command, rather than a brute force nearest neighbor
-        %  computation
+
         %  s is all points and g is the generator/agent position
         is_collinear = true;
         temp_g = g;
@@ -259,7 +255,7 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
                 temp_g(1, 2) = temp_g(1, 2) + 1;
             end
         end
-        if mod(it, 40) == 1
+        if mod(it, update_cell_every_n_iteration) == 1 || update_cell_every_n_iteration == 1
             index_label = powercellidx (g(1,:),g(2,:),Xss_T(1,:),Xss_T(2,:)); % for each point, label it by nearest neighbor (there are 945 1/2/3 labels)  
         end
 
@@ -308,18 +304,15 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
         % beta = 10;
         
         
-      
         %% HEURISTIC FUNCTION
         beta = 20;
         phi_func = est_mu + beta*est_s2;
-        
-        
-        
+
         % evaluate prediction perfermance
             idx_train = unique([bots.Nm_ind]); % 3 column, 1 for each bots
             idx_test = setdiff(1:length(Fss),idx_train); % all index for not trained data
         
-        rms_stack(it) = sqrt(sum( (pred_h(idx_test) - Fss(idx_test)).^2 )/(length(Fss(idx_test))));  % prediction error
+        rms_stack(it) = sqrt(sum( (est_mu(idx_test) - Fss(idx_test)).^2 )/(length(Fss(idx_test))));  % prediction error
         var_stack(it) = mean(pred_Var);  % uncertainty
         [max_mis(it), ~] = max(abs(Fss(idx_test)-est_mu(idx_test))); % max of misprediction
         
@@ -340,15 +333,15 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
  
 %% plot trajectory       
         for idx_plot = 1:g_num % bots trajectory print  
-            plot(bots(idx_plot).Xs(num_init_sam:end,1),bots(idx_plot).Xs(num_init_sam:end,2),'LineWidth',5,'Color',lineStyles(7,:));
+            plot(bots(idx_plot).Xs(num_init_sam:end,1),bots(idx_plot).Xs(num_init_sam:end,2),'LineWidth',5,'Color',lineStyles(1+3*idx_plot,:));
             hold on;
-            plot(bots(idx_plot).Xs(end,1),bots(idx_plot).Xs(end,2),'o','MarkerSize',20,'LineWidth',5,'Color',lineStyles(2,:))
+            plot(bots(idx_plot).Xs(end,1),bots(idx_plot).Xs(end,2),'o','MarkerSize',20,'LineWidth',5,'Color',lineStyles(1+idx_plot,:))
             hold on;
         end
         
 
 %% plot division edge  
-        if mod(it,40) == 1
+if mod(it, update_cell_every_n_iteration) == 1 || update_cell_every_n_iteration == 1
             edge_x_temp = edge_x;
             edge_y_temp = edge_y;
             g_temp = g;
@@ -358,100 +351,87 @@ function [rms_stack, var_stack, cf, max_mis, model, pred_h, pred_Var] = main_bot
         text(g_temp(1,:)'+2,g_temp(2,:)',int2str((1:g_num)'),'FontSize',25);
         axis ([  0, map_x, 0, map_y ])
         drawnow
-        xlabel('X','FontSize',25);
-        ylabel('Y','FontSize',25);
-        set(gca,'LineWidth',5,'fontsize',25,'fontname','Times','FontWeight','Normal');
+        xlabel('X','FontSize',30);
+        ylabel('Y','FontSize',30);
+        set(gca,'LineWidth',5,'fontsize',30,'fontname','Times','FontWeight','Normal');
         hold off;
-        % plot(edge_x,edge_y,'--','Color',lineStyles(9,:),'LineWidth',5);
-        % hold on;
-        % text(g(1,:)'+2,g(2,:)',int2str((1:g_num)'),'FontSize',25);
-        % axis ([  0, map_x, 0, map_y ])
-        % drawnow
-        % xlabel('X','FontSize',25);
-        % ylabel('Y','FontSize',25);
-        % set(gca,'LineWidth',5,'fontsize',25,'fontname','Times','FontWeight','Normal');
-        % hold off;
-     
         
         cf(it) = 0;
         for i = 1:s_num
             cf(it) = cf(it)+((Xss_T(1,i)-g(1,index_label(i))).*Fss(i))^2+((Xss_T(2,i)-g(2,index_label(i))).*Fss(i)) ^2;  % get summation of distance to goal
         end
-        pause(1);
-
-%%  Display the energy.
-        % figure(2);
-        % subplot ( 1, 2, 1 )
-        % plot(step, rms_stack, 'r-s');
-        % title ( 'RMS Error' )
-        % xlabel ( 'Step' )
-        % grid on
-        % axis equal
-        % xlim([0 45]);
-        % axis square
-        % drawnow
-    
-        % figure(2);
-        % subplot ( 1, 2, 2 )
-        % plot ( step, cf, 'm-' )
-        % title ( 'Cost Function' )
-        % xlabel ( 'Step' )
-        % ylabel ( 'Energy' )
-        % grid on;
-        % axis equal
-        % xlim([0 35]);
-        % axis square
-        % drawnow
+        pause(1)
         
         
-        
-    % Step 7 Update the generators.
-        % pred_h_list = cell(1, num_bot);
-        % pred_Var_list = cell(1, num_bot);
-        % for i = 1:num_bot
-        %     pred_h_list{i} = zeros(length(Fss), 1);
-        %     pred_Var_list{i} = zeros(length(Fss), 1);
-        % end
-        
-        % g = g+kp*(g_new-g); %g_new is the centroid   g is the next visit point 
-        % proj_g_idx = get_idx(g', Xss); 
-        
-        stop_count = 0;
+        information_gain = 0;
         for ijk = 1:g_num
-            set_points = double(bots(ijk).controller.get_nextpts(pred_h_list_forpy{ijk}));
-            set_points = round(set_points);
-            set_points = unique(set_points, 'rows','stable'); % remove redundant coordinates
+            set_points = double( bots(ijk).controller.get_nextpts(pred_h_list_forpy{ijk}) );
+            % set_points = round(set_points);
+            % set_points = unique(set_points, 'rows','stable'); % remove redundant coordinates
             % update robot position
             g(:,ijk) = set_points(end, :);
+            
             set_points_indexs = get_idx(set_points, Xss); 
-
             for i = 1:size(set_points_indexs, 1)
                 index = set_points_indexs(i);
-
+                
                 if bots(ijk).Nm_ind(end) ~= index
                     bots(ijk).Nm_ind(end+1) = index; % visited position index
                     bots(ijk).Xs(end+1,:) = Xss(index,:);  % add new position to visited positions set
                 end
+                information_gain = information_gain + pred_Var(index) * Fss_org(index);
             end
-
+            
             bots(ijk).Nm_ind = bots(ijk).Nm_ind(:)';
+        end
+        info_gain_stack(it) = information_gain;
+        figure(6);
+        set(groot, 'DefaultAxesFontSize', 25);
 
-        end
+        subplot ( 1, 3, 1 )
+        plot ( step, info_gain_stack, 'm-' )
+        title ( 'Infomation gain' )
+        xlabel ( 'Step' )
+        ylabel ( 'Information gain' )
+        grid on;
+        axis equal
+        axis square
+        drawnow
         
+        culmulative_info_gain = culmulative_info_gain + information_gain;
+        culmulative_info_gain_stack(it) = culmulative_info_gain;
+        figure(6);
+        subplot ( 1, 3, 2 )
+        plot ( step, culmulative_info_gain_stack, 'm-' )
+        title ( 'Cumulative infomation gain' )
+        xlabel ( 'Step' )
+        ylabel ( 'Cumulative infomation gain' )
+        grid on;
+        axis equal
+        axis square
+        drawnow
         
-        if stop_count == num_bot
-            stop_flag = 1;
-        end
+        figure(6);
+        subplot ( 1, 3, 3 )
+        plot ( step, rms_stack, 'm-' )
+        title ( 'Info distribution estimation RMS' )
+        xlabel ( 'Step' )
+        % ylabel ( 'Cumulative infomation gain' )
+        grid on;
+        axis equal
+        axis square
+        drawnow
+        
         
         %% plot 
         % look into (phi_func = est_mu + beta*est_s2)
         plot_3Dsurf(4, reshape(est_mu,[size(ksx_g,1),size(ksx_g,2)]), [0,1]);
-        % plot_3Dsurf(3, reshape(est_s2,[size(ksx_g,1),size(ksx_g,2)]), [0, 4]);
+        plot_3Dsurf(5, reshape(est_s2,[size(ksx_g,1),size(ksx_g,2)]), [0, 4]);
         
  
         
     end
-    
+    culmulative_info_gain_stack
 end
 
 
