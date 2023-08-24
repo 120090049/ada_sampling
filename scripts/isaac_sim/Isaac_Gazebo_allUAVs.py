@@ -58,7 +58,7 @@ vessel_d_path = ["vessel_d", "vessel_d_01", "vessel_d_02", "vessel_d_03"]
 vessel_g_path = ["vessel_g", "vessel_g_01", "vessel_g_02", "vessel_g_03"]
 
 #paths for max number of vtols
-standard_vtol_path = ["uav1","uav2", "uav3"]
+standard_vtol_path = ["uav1", "uav2", "uav3"]
 
 #paths for forward facing cameras
 forward_cam_path = ["uav1/uav1_cam2", "uav2/uav2_cam2"]
@@ -147,16 +147,10 @@ class IsaacGazeboInterface(object):
             if 'vessel_d' in model_name:
                 self.vessel_d_robots[int(model_idx)].set_world_pose(position=position_vector, orientation=orientation_vector)
             elif 'vessel_g' in model_name:
-                #assign to first vessel_g
-                # position_vector[2] = -3.5
-                # if 'pole' in model_name:
-                #     self.vessel_g_robots[0].set_world_pose(position=position_vector, orientation=orientation_vector)
-                # else:
-                    # self.vessel_g_robots[int(model_idx)].set_world_pose(position=position_vector, orientation=orientation_vector)
                 self.vessel_g_robots[int(model_idx)].set_world_pose(position=position_vector, orientation=orientation_vector)
-            elif 'hex' in model_name:
-                self.vtol_robots[2].set_world_pose(position=position_vector, orientation=orientation_vector)
-            elif 'vtol' in model_name:
+            # elif 'hex' in model_name:
+            #     self.vtol_robots[2].set_world_pose(position=position_vector, orientation=orientation_vector)
+            elif 'uav' in model_name:
                 self.vtol_robots[int(model_idx)-1].set_world_pose(position=position_vector, orientation=orientation_vector)
                 #update downward facing camera
                 forward_cam_array = self.euler_from_quaternion(model_pose.orientation.x, model_pose.orientation.y, model_pose.orientation.z, model_pose.orientation.w)
