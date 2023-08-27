@@ -4,7 +4,7 @@ This repo is for Lingpeng's CMU RISS program code for the ONR project in Advance
 
 In general, our research proposes a novel active learning architecture for spatial environment, addressing the problem of informative path planning in multi-robot systems. We proposed an information distribution map for path planning based on the target location and agent sensing performance, combining a Mixture of Gaussian Process for information estimation and ergodic control to extract informative samples. We developed a high-fidelity ship-tracking simulator with three VTOLs, validating our approach's effectiveness in information gathering and estimating ocean targets on a specially designed dataset. Future research could further our model into the spatial-temporal model and method for inter-robot information communication to better address real-world challenges in informative path planning.
 
-![environment.png](https://github.com/120090049/ada_sampling/blob/main/images/Untitled%201.png)
+![environment.png](https://github.com/120090049/ada_sampling/blob/main/images/environment.png)
 
 In general the repo consists of two part, simulator for the ocean, vessels and vtols, as well as the algorithm.
 
@@ -36,7 +36,7 @@ We have 8 vessels in total. We use bezier curve to model the ship movement. To m
 rosrun ada_sampling ship_auto_controller.py 1
 ```
 
-![Untitled](https://github.com/120090049/ada_sampling/blob/main/images/Untitled.png)
+![Untitled]((https://github.com/120090049/ada_sampling/blob/main/images/Untitled%201.png)
 
 ## Run algorithm
 
@@ -49,7 +49,7 @@ ship_tracking
 
 The results are as follows, for the detailed implementation like sudo code, please refer to my RISS paper and video (shown in the link at the beginning)
 
-![Untitled](https://github.com/120090049/ada_sampling/blob/main/images/environment.png)
+![Untitled]()
 
 (a) is the information estimation map with prior knowledge before the sampling starts. Each robot is represented by a differently colored circle. (b) is the information estimation after 15 iterations. The routes of robots are represented by the differently colored trajectory (c) is the comparison between the estimated information distribution and ground truth.
 
